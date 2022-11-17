@@ -266,6 +266,29 @@ void ConfigManager::handleRefreshConsole()
         }
       }
     }
+    else if (strcmp(svalue.c_str(), "0") == 0)
+    {
+      if (!getAllowTx())
+      {
+        Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+      }
+      else
+      {
+        static long lastTCPacketTime = 0;
+        if (millis() - lastTCPacketTime < 20*1000)
+        {
+          Log::console(PSTR("Please wait a few seconds to send another test packet."));
+        }
+                
+        else
+        {
+          Radio &radio = Radio::getInstance();
+          radio.sendResetTC();
+          lastTCPacketTime = millis();
+          Log::console(PSTR("Sending RESET TC packet!"));
+        }
+      }
+    }
     else
     {
       Log::console(PSTR("%s"), F("Command still not supported in web serial console!"));

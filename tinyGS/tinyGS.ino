@@ -318,6 +318,24 @@ void handleSerial()
         lastTestPacketTime = millis();
         Log::console(PSTR("Sending test packet to nearby stations!"));
         break;
+      case 0:
+        if (!configManager.getAllowTx())
+        {
+          Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+          break;
+        }
+
+        static long lastTCPacketTime = 0;
+        if (millis() - lastTCPacketTime < 20*1000)
+        {
+          Log::console(PSTR("Please wait a few seconds to send another test packet."));
+          break;
+        }
+        
+        radio.sendResetTC();
+        lastTCPacketTime = millis();
+        Log::console(PSTR("Sending RESET TC packet!"));
+        break;
       default:
         Log::console(PSTR("Unknown command: %c"), serialCmd);
         break;
@@ -363,5 +381,6 @@ void printControls()
   Log::console(PSTR("e - erase board config and reset"));
   Log::console(PSTR("b - reboot the board"));
   Log::console(PSTR("p - send test packet to nearby stations (to check transmission)"));
+  Log::console(PSTR("0 - send RESET TC"));
   Log::console(PSTR("------------------------------------"));
 }

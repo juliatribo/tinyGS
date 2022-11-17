@@ -67,6 +67,7 @@ public:
   int16_t remote_SPIreadRegister(char* payload, size_t payload_len);
   int16_t sendTx(uint8_t* data, size_t length);
   int16_t sendTestPacket();
+  int16_t sendResetTC();
    
 private:
   Radio();
@@ -75,6 +76,7 @@ private:
   static void setFlag();
   SPIClass spi;
   const char* TEST_STRING = "TinyGS-test "; // make sure this always start with "TinyGS-test"!!!
+  byte RESET_TC[3] = {0xC8, 0x9D, 0x01};
 
   double _atof(const char* buff, size_t length);
   int _atoi(const char* buff, size_t length);
