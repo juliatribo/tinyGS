@@ -318,23 +318,87 @@ void handleSerial()
         lastTestPacketTime = millis();
         Log::console(PSTR("Sending test packet to nearby stations!"));
         break;
-      case 0:
+      case '1':
+        configManager.txTC(radio.RESET_TC," RESET");
+        break;
+      case '2':
+        configManager.txTC(radio.NOMINAL_TC,"NOMINAL");
+        break;
+      case '3':
+        configManager.txTC(radio.LOW_TC,"LOW");
+        break;
+      case '4':
+        configManager.txTC(radio.CRITICAL_TC,"CRITICAL");
+        break;
+      case '5':
+        configManager.txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER");
+        break;
+      case '6':
+        configManager.txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY");
+        break;
+      case '7':
+        configManager.txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE");
+        break;
+      case '8':
+        configManager.txTC(radio.SET_TIME_TC,"SET TIME");
+        break;
+      case '10':
+        configManager.txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP");
+        break;
+      case '11':
         if (!configManager.getAllowTx())
         {
           Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
           break;
         }
 
-        static long lastTCPacketTime = 0;
-        if (millis() - lastTCPacketTime < 20*1000)
+        lastTestPacketTime = 0;
+        if (millis() - lastTestPacketTime < 20*1000)
         {
           Log::console(PSTR("Please wait a few seconds to send another test packet."));
           break;
         }
         
-        radio.sendResetTC();
-        lastTCPacketTime = millis();
-        Log::console(PSTR("Sending RESET TC packet!"));
+        radio.sendTC(radio.TLE_TC_1);
+        delay(500);
+        radio.sendTC(radio.TLE_TC_2);
+        lastTestPacketTime = millis();
+        Log::console(PSTR("Sending TLE_TC packets!"));
+        break;
+
+        break;
+      case '12':
+        configManager.txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES");
+        break;
+      case '20':
+        configManager.txTC(radio.SEND_DATA_TC,"SEND DATA");
+        break;
+      case '21':
+        configManager.txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY");
+        break;
+      case '22':
+        configManager.txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA");
+        break;
+      case '23':
+        configManager.txTC(radio.ACK_DATA_TC,"ACK DATA");
+        break;
+      case '24':
+        configManager.txTC(radio.SET_SF_CR_TC,"SET SF CR");
+        break;
+      case '25':
+        configManager.txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION");
+        break;
+      case '26':
+        configManager.txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT");
+        break;
+      case '30':
+        configManager.txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO");
+        break;
+      case '40':
+        configManager.txTC(radio.TAKE_RF_TC, "TAKE RF");
+        break;
+      case '50':
+        configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG");
         break;
       default:
         Log::console(PSTR("Unknown command: %c"), serialCmd);
@@ -344,6 +408,7 @@ void handleSerial()
     radio.enableInterrupt();
   }
 }
+
 
 void switchTestmode()
 {  
@@ -381,6 +446,26 @@ void printControls()
   Log::console(PSTR("e - erase board config and reset"));
   Log::console(PSTR("b - reboot the board"));
   Log::console(PSTR("p - send test packet to nearby stations (to check transmission)"));
-  Log::console(PSTR("0 - send RESET TC"));
+  Log::console(PSTR("1 - send RESET TC"));
+  Log::console(PSTR("2 - send NOMINAL TC"));
+  Log::console(PSTR("3 - send LOW TC"));
+  Log::console(PSTR("4 - send CRITICAL TC"));
+  Log::console(PSTR("5 - send EXIT LOW POWER TC"));
+  Log::console(PSTR("6 - send EXIT CONTINGENCY TC"));
+  Log::console(PSTR("7 - send EXIT SUNSAFE TC"));
+  Log::console(PSTR("8 - send SET TIME TC"));
+  Log::console(PSTR("10 - send SET CONSTANT KP TC"));
+  Log::console(PSTR("11 - send TLE TC"));
+  Log::console(PSTR("12 - send SET GYRO RES TC"));
+  Log::console(PSTR("20 - send SEND DATA TC"));
+  Log::console(PSTR("21 - send SEND TELEMETRY TC"));
+  Log::console(PSTR("22 - send STOP SENDING DATA TC"));
+  Log::console(PSTR("23 - send ACK DATA TC"));
+  Log::console(PSTR("24 - send SET SF CR TC"));
+  Log::console(PSTR("25 - send SEND CALIBRATION TC"));
+  Log::console(PSTR("26 - send CHANGE TIMEOUT TC"));
+  Log::console(PSTR("30 - send TAKE PHOTO TC"));
+  Log::console(PSTR("40 - send TAKE RF TC"));
+  Log::console(PSTR("50 - send SEND CONFIG TC"));
   Log::console(PSTR("------------------------------------"));
 }

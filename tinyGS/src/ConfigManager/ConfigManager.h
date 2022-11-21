@@ -130,7 +130,8 @@ public:
   void resetModemConfig();
   boolean init();
   void printConfig();
-
+  void txTC(byte TC[], const char* TC_name);
+  
   uint16_t getMqttPort() { return (uint16_t)atoi(mqttPort); }
   const char *getMqttServer() { return mqttServer; }
   const char *getMqttUser() { return mqttUser; }

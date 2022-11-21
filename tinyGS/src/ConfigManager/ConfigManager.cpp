@@ -266,28 +266,127 @@ void ConfigManager::handleRefreshConsole()
         }
       }
     }
-    else if (strcmp(svalue.c_str(), "0") == 0)
+    else if (strcmp(svalue.c_str(), "1") == 0)
     {
-      if (!getAllowTx())
-      {
-        Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
-      }
-      else
-      {
-        static long lastTCPacketTime = 0;
-        if (millis() - lastTCPacketTime < 20*1000)
+      Radio &radio = Radio::getInstance();
+      txTC(radio.RESET_TC," RESET");
+    }
+    else if (strcmp(svalue.c_str(), "2") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.NOMINAL_TC,"NOMINAL");
+    }
+    else if (strcmp(svalue.c_str(), "3") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.LOW_TC,"LOW");
+    }
+    else if (strcmp(svalue.c_str(), "4") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.CRITICAL_TC,"CRITICAL");
+    }
+    else if (strcmp(svalue.c_str(), "5") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER");
+    }
+    else if (strcmp(svalue.c_str(), "6") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY");
+    }
+    else if (strcmp(svalue.c_str(), "7") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE");
+    }
+    else if (strcmp(svalue.c_str(), "8") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SET_TIME_TC,"SET TIME");
+    }
+    else if (strcmp(svalue.c_str(), "10") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP");
+    }
+    else if (strcmp(svalue.c_str(), "11") == 0)
+    {
+      if (getAllowTx())
+        {
+          Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+        }
+      else{
+        static long lastTestPacketTime = 0;
+        if (millis() - lastTestPacketTime < 20*1000)
         {
           Log::console(PSTR("Please wait a few seconds to send another test packet."));
         }
-                
-        else
-        {
-          Radio &radio = Radio::getInstance();
-          radio.sendResetTC();
-          lastTCPacketTime = millis();
-          Log::console(PSTR("Sending RESET TC packet!"));
+        else{
+        Radio &radio = Radio::getInstance();
+        radio.sendTC(radio.TLE_TC_1);
+        delay(500);
+        radio.sendTC(radio.TLE_TC_2);
+        lastTestPacketTime = millis();
+        Log::console(PSTR("Sending TLE_TC packets!"));
         }
       }
+    }
+    else if (strcmp(svalue.c_str(), "12") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES");
+    }
+    else if (strcmp(svalue.c_str(), "20") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SEND_DATA_TC,"SEND DATA");   
+    }
+    else if (strcmp(svalue.c_str(), "21") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY");
+    }
+    else if (strcmp(svalue.c_str(), "22") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA");
+    }
+    else if (strcmp(svalue.c_str(), "23") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.ACK_DATA_TC,"ACK DATA");
+    }
+    else if (strcmp(svalue.c_str(), "24") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SET_SF_CR_TC,"SET SF CR");
+    }
+    else if (strcmp(svalue.c_str(), "25") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION");
+    }
+    else if (strcmp(svalue.c_str(), "26") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT");
+    }
+    else if (strcmp(svalue.c_str(), "30") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO");
+    }
+    else if (strcmp(svalue.c_str(), "40") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.TAKE_RF_TC, "TAKE RF");
+    }
+    else if (strcmp(svalue.c_str(), "50") == 0)
+    {
+      Radio &radio = Radio::getInstance();
+      txTC(radio.SEND_CONFIG_TC, "SEND CONFIG");
     }
     else
     {
@@ -341,6 +440,29 @@ void ConfigManager::handleRefreshConsole()
   server.client().stop();
 }
 
+void ConfigManager::txTC(byte TC[], const char* TC_name)
+{
+  if (!getAllowTx())
+  {
+    Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+  }
+  else
+  {
+    static long lastPacketTime = 0;
+    if (millis() - lastPacketTime < 20*1000)
+    {
+      Log::console(PSTR("Please wait a few seconds to send another test packet."));
+    }
+            
+    else
+    {
+      Radio &radio = Radio::getInstance();
+      radio.sendTC(TC);
+      lastPacketTime = millis();
+      Log::console(PSTR("Sending %s TC packet!"),TC_name);
+    }
+  }
+}
 void ConfigManager::handleRefreshWorldmap()
 {
   if (getState() == IOTWEBCONF_STATE_ONLINE)

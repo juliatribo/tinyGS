@@ -261,9 +261,9 @@ int16_t Radio::sendTestPacket()
   return sendTx((uint8_t *)TEST_STRING, strlen(TEST_STRING));
 }
 
-int16_t Radio::sendResetTC()
+int16_t Radio::sendTC(uint8_t *TC)
 {
-  return sendTx(RESET_TC, sizeof(RESET_TC));
+  return sendTx(TC, sizeof(TC));
 }
 uint8_t Radio::listen()
 {
