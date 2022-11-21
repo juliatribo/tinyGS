@@ -65,9 +65,8 @@ public:
   int16_t remote_SPIsetRegValue(char* payload, size_t payload_len);
   void remote_SPIwriteRegister(char* payload, size_t payload_len);
   int16_t remote_SPIreadRegister(char* payload, size_t payload_len);
-  int16_t sendTx(uint8_t* data, size_t length);
+  int16_t sendTx(uint8_t *data, size_t length);
   int16_t sendTestPacket();
-  int16_t sendTC(uint8_t* TC);
   byte RESET_TC[3] = {0xC8, 0x9D, 0x01};
   byte NOMINAL_TC[4] = {0xC8, 0x9D, 0x02, 0x5A}; // 90%
   byte LOW_TC[4] = {0xC8, 0x9D, 0x03, 0x50}; // 80%

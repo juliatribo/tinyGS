@@ -319,31 +319,31 @@ void handleSerial()
         Log::console(PSTR("Sending test packet to nearby stations!"));
         break;
       case '1':
-        configManager.txTC(radio.RESET_TC," RESET");
+        configManager.txTC(radio.RESET_TC," RESET", sizeof(radio.RESET_TC));
         break;
       case '2':
-        configManager.txTC(radio.NOMINAL_TC,"NOMINAL");
+        configManager.txTC(radio.NOMINAL_TC,"NOMINAL", sizeof(radio.NOMINAL_TC));
         break;
       case '3':
-        configManager.txTC(radio.LOW_TC,"LOW");
+        configManager.txTC(radio.LOW_TC,"LOW", sizeof(radio.LOW_TC));
         break;
       case '4':
-        configManager.txTC(radio.CRITICAL_TC,"CRITICAL");
+        configManager.txTC(radio.CRITICAL_TC,"CRITICAL", sizeof(radio.CRITICAL_TC));
         break;
       case '5':
-        configManager.txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER");
+        configManager.txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER", sizeof(radio.EXIT_LOW_POWER_TC));
         break;
       case '6':
-        configManager.txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY");
+        configManager.txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY", sizeof(radio.EXIT_CONTINGENCY_TC));
         break;
       case '7':
-        configManager.txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE");
+        configManager.txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE", sizeof(radio.EXIT_SUNSAFE_TC));
         break;
       case '8':
-        configManager.txTC(radio.SET_TIME_TC,"SET TIME");
+        configManager.txTC(radio.SET_TIME_TC,"SET TIME", sizeof(radio.SET_TIME_TC));
         break;
       case '10':
-        configManager.txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP");
+        configManager.txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP", sizeof(radio.SET_CONSTANT_KP_TC));
         break;
       case '11':
         if (!configManager.getAllowTx())
@@ -359,46 +359,46 @@ void handleSerial()
           break;
         }
         
-        radio.sendTC(radio.TLE_TC_1);
+        radio.sendTx(radio.TLE_TC_1, sizeof(radio.TLE_TC_1));
         delay(500);
-        radio.sendTC(radio.TLE_TC_2);
+        radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
         lastTestPacketTime = millis();
         Log::console(PSTR("Sending TLE_TC packets!"));
         break;
 
         break;
       case '12':
-        configManager.txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES");
+        configManager.txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES", sizeof(radio.SET_GYRO_RES_TC));
         break;
       case '20':
-        configManager.txTC(radio.SEND_DATA_TC,"SEND DATA");
+        configManager.txTC(radio.SEND_DATA_TC,"SEND DATA", sizeof(radio.SEND_DATA_TC));
         break;
       case '21':
-        configManager.txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY");
+        configManager.txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY", sizeof(radio.SEND_TELEMETRY_TC));
         break;
       case '22':
-        configManager.txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA");
+        configManager.txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA", sizeof(radio.STOP_SENDING_DATA_TC));
         break;
       case '23':
-        configManager.txTC(radio.ACK_DATA_TC,"ACK DATA");
+        configManager.txTC(radio.ACK_DATA_TC,"ACK DATA", sizeof(radio.ACK_DATA_TC));
         break;
       case '24':
-        configManager.txTC(radio.SET_SF_CR_TC,"SET SF CR");
+        configManager.txTC(radio.SET_SF_CR_TC,"SET SF CR", sizeof(radio.SET_SF_CR_TC));
         break;
       case '25':
-        configManager.txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION");
+        configManager.txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION", sizeof(radio.SEND_CALIBRATION_TC));
         break;
       case '26':
-        configManager.txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT");
+        configManager.txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT", sizeof(radio.CHANGE_TIMEOUT_TC));
         break;
       case '30':
-        configManager.txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO");
+        configManager.txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO", sizeof(radio.TAKE_PHOTO_TC));
         break;
       case '40':
-        configManager.txTC(radio.TAKE_RF_TC, "TAKE RF");
+        configManager.txTC(radio.TAKE_RF_TC, "TAKE RF", sizeof(radio.TAKE_RF_TC));
         break;
       case '50':
-        configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG");
+        configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG", sizeof(radio.SEND_CONFIG_TC));
         break;
       default:
         Log::console(PSTR("Unknown command: %c"), serialCmd);

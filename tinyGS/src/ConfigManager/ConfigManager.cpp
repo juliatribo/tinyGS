@@ -269,51 +269,51 @@ void ConfigManager::handleRefreshConsole()
     else if (strcmp(svalue.c_str(), "1") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.RESET_TC," RESET");
+      txTC(radio.RESET_TC," RESET", sizeof(radio.RESET_TC));
     }
     else if (strcmp(svalue.c_str(), "2") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.NOMINAL_TC,"NOMINAL");
+      txTC(radio.NOMINAL_TC,"NOMINAL", sizeof(radio.NOMINAL_TC));
     }
     else if (strcmp(svalue.c_str(), "3") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.LOW_TC,"LOW");
+      txTC(radio.LOW_TC,"LOW", sizeof(radio.LOW_TC));
     }
     else if (strcmp(svalue.c_str(), "4") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.CRITICAL_TC,"CRITICAL");
+      txTC(radio.CRITICAL_TC,"CRITICAL", sizeof(radio.CRITICAL_TC));
     }
     else if (strcmp(svalue.c_str(), "5") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER");
+      txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER", sizeof(radio.EXIT_LOW_POWER_TC));
     }
     else if (strcmp(svalue.c_str(), "6") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY");
+      txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY", sizeof(radio.EXIT_CONTINGENCY_TC));
     }
     else if (strcmp(svalue.c_str(), "7") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE");
+      txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE",sizeof(radio.EXIT_SUNSAFE_TC));
     }
     else if (strcmp(svalue.c_str(), "8") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SET_TIME_TC,"SET TIME");
+      txTC(radio.SET_TIME_TC,"SET TIME",sizeof(radio.SET_TIME_TC));
     }
     else if (strcmp(svalue.c_str(), "10") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP");
+      txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP",sizeof(radio.SET_CONSTANT_KP_TC));
     }
     else if (strcmp(svalue.c_str(), "11") == 0)
     {
-      if (getAllowTx())
+      if (!getAllowTx())
         {
           Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
         }
@@ -325,9 +325,9 @@ void ConfigManager::handleRefreshConsole()
         }
         else{
         Radio &radio = Radio::getInstance();
-        radio.sendTC(radio.TLE_TC_1);
+        radio.sendTx(radio.TLE_TC_1, sizeof(radio.TLE_TC_1));
         delay(500);
-        radio.sendTC(radio.TLE_TC_2);
+        radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
         lastTestPacketTime = millis();
         Log::console(PSTR("Sending TLE_TC packets!"));
         }
@@ -336,57 +336,57 @@ void ConfigManager::handleRefreshConsole()
     else if (strcmp(svalue.c_str(), "12") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES");
+      txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES",sizeof(radio.SET_GYRO_RES_TC));
     }
     else if (strcmp(svalue.c_str(), "20") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SEND_DATA_TC,"SEND DATA");   
+      txTC(radio.SEND_DATA_TC,"SEND DATA",sizeof(radio.SEND_DATA_TC));   
     }
     else if (strcmp(svalue.c_str(), "21") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY");
+      txTC(radio.SEND_TELEMETRY_TC,"SEND TELEMETRY",sizeof(radio.SEND_TELEMETRY_TC));
     }
     else if (strcmp(svalue.c_str(), "22") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA");
+      txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA",sizeof(radio.STOP_SENDING_DATA_TC));
     }
     else if (strcmp(svalue.c_str(), "23") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.ACK_DATA_TC,"ACK DATA");
+      txTC(radio.ACK_DATA_TC,"ACK DATA",sizeof(radio.ACK_DATA_TC));
     }
     else if (strcmp(svalue.c_str(), "24") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SET_SF_CR_TC,"SET SF CR");
+      txTC(radio.SET_SF_CR_TC,"SET SF CR",sizeof(radio.SET_SF_CR_TC));
     }
     else if (strcmp(svalue.c_str(), "25") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION");
+      txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION",sizeof(radio.SEND_CALIBRATION_TC));
     }
     else if (strcmp(svalue.c_str(), "26") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT");
+      txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT",sizeof(radio.CHANGE_TIMEOUT_TC));
     }
     else if (strcmp(svalue.c_str(), "30") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO");
+      txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO",sizeof(radio.TAKE_PHOTO_TC));
     }
     else if (strcmp(svalue.c_str(), "40") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.TAKE_RF_TC, "TAKE RF");
+      txTC(radio.TAKE_RF_TC, "TAKE RF",sizeof(radio.TAKE_RF_TC));
     }
     else if (strcmp(svalue.c_str(), "50") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SEND_CONFIG_TC, "SEND CONFIG");
+      txTC(radio.SEND_CONFIG_TC, "SEND CONFIG",sizeof(radio.SEND_CONFIG_TC));
     }
     else
     {
@@ -440,7 +440,7 @@ void ConfigManager::handleRefreshConsole()
   server.client().stop();
 }
 
-void ConfigManager::txTC(byte TC[], const char* TC_name)
+void ConfigManager::txTC(byte *TC, const char* TC_name,  size_t length)
 {
   if (!getAllowTx())
   {
@@ -457,7 +457,7 @@ void ConfigManager::txTC(byte TC[], const char* TC_name)
     else
     {
       Radio &radio = Radio::getInstance();
-      radio.sendTC(TC);
+      radio.sendTx(TC, length);
       lastPacketTime = millis();
       Log::console(PSTR("Sending %s TC packet!"),TC_name);
     }
