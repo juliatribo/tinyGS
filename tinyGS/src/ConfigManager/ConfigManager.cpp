@@ -440,7 +440,7 @@ void ConfigManager::handleRefreshConsole()
   server.client().stop();
 }
 
-void ConfigManager::txTC(byte *TC, const char* TC_name,  size_t length)
+void ConfigManager::txTC(byte* TC, const char* TC_name,  size_t length)
 {
   if (!getAllowTx())
   {
