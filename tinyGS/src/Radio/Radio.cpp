@@ -299,9 +299,6 @@ uint8_t Radio::listen()
     respLen = l->getPacketLength();
     respFrame = new uint8_t[respLen];
     state = l->readData(respFrame, respLen);
-    decode_conv(respFrame,respLen);
-    deinterleave(respFrame, sizeof(respFrame));
-    decode_rs(respFrame,sizeof(respFrame));
     newPacketInfo.rssi = l->getRSSI();
     newPacketInfo.snr = l->getSNR();
   }
@@ -327,18 +324,43 @@ uint8_t Radio::listen()
   if (state == ERR_NONE && respLen > 0)
   {
     // read optional data
-    Log::console(PSTR("Packet (%u bytes):"), respLen);
+    Log::console(PSTR("Packet encoded (%u bytes):"), respLen);
     uint16_t buffSize = respLen * 2 + 1;
     if (buffSize > 255)
       buffSize = 255;
-    char *byteStr = new char[buffSize];
+    char *rx_str = new char[buffSize];
     for (int i = 0; i < respLen; i++)
     {
-      sprintf(byteStr + i * 2 % (buffSize - 1), "%02x", respFrame[i]);
+      sprintf(rx_str + i * 2 % (buffSize - 1), "%02x", respFrame[i]);
       if (i * 2 % buffSize == buffSize - 3 || i == respLen - 1)
-        Log::console(PSTR("%s"), byteStr); // print before the buffer is going to loop back
+        Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
-    delete[] byteStr;
+    //read decoded convolutional
+    char *rx_str_deconv = new char[buffSize];
+    int index = ceil(respLen/RATE_CON)-1;
+    Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
+    uint8_t data_deconv[respLen];
+    memcpy(data_deconv,respFrame,respLen);
+    decode_conv(data_deconv,respLen);
+    for (int i = 0; i < index; i++)
+    {
+      sprintf(rx_str_deconv + i * 2 % (buffSize - 1), "%02x", data_deconv[i]);
+      if (i * 2 % buffSize == buffSize - 3 || i == index - 1)
+        Log::console(PSTR("%s"), rx_str_deconv); // print before the buffer is going to loop back
+    }
+
+    //read decoded convolutional deinterleaved
+    char *rx_str_conv_deinter = new char[buffSize];
+    Log::console(PSTR("Packet convolution decoded and deinterleaved (%u bytes):"), index);
+    uint8_t data_conv_deinter[index];
+    memcpy(data_conv_deinter,data_deconv,index);
+    deinterleave(data_conv_deinter,index);
+    for (int i = 0; i < index; i++)
+    {
+      sprintf(rx_str_conv_deinter + i * 2 % (buffSize - 1), "%02x", data_conv_deinter[i]);
+      if (i * 2 % buffSize == buffSize - 3 || i == index - 1)
+        Log::console(PSTR("%s"), rx_str_conv_deinter); // print before the buffer is going to loop back
+    }
 
     // if Filter enabled filter the received packet
     if (status.modeminfo.filter[0] != 0)
@@ -993,7 +1015,7 @@ void  Radio::decode_conv(uint8_t* data, size_t length)
   int index = ceil(length/RATE_CON);
   uint8_t conv_decoded[index];
   ssize_t decoded_conv_size = correct_convolutional_decode(conv, data, length*8, conv_decoded);
-  data = conv_decoded;
+  memcpy(data, conv_decoded,decoded_conv_size);
 }
 
 void  Radio::deinterleave(uint8_t* data, size_t length)
@@ -1003,8 +1025,8 @@ void  Radio::deinterleave(uint8_t* data, size_t length)
 	int r = 0;
 	int col;
 	int row;
-	char block[BLOCK_ROW_INTER][BLOCK_COL_INTER];
-  unsigned char codeword_deinterleaved[length];
+	uint8_t block[BLOCK_ROW_INTER][BLOCK_COL_INTER];
+  uint8_t codeword_deinterleaved[length];
 
 	while(q < length){
 		for(col=0; col < BLOCK_COL_INTER && !end; col++){
@@ -1025,6 +1047,7 @@ void  Radio::deinterleave(uint8_t* data, size_t length)
 			}
 		}
 	}
+  memcpy(data,codeword_deinterleaved,length);
 }
 
 void  Radio::decode_rs(uint8_t* data, size_t length)
@@ -1032,5 +1055,5 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
   correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
   uint8_t rs_decoded[MESSAGE_LENGTH_RS];
   ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
-  data = rs_decoded; 
+  memcpy(data, rs_decoded,size_decode);
 }
