@@ -18,6 +18,8 @@
 */
 
 #include "Radio.h"
+#include "correct/reed-solomon.h"
+#include "correct/convolutional.h"
 #include "ArduinoJson.h"
 #if ARDUINOJSON_USE_LONG_LONG == 0 && !PLATFORMIO
 #error "Using Arduino IDE is not recommended, please follow this guide https://github.com/G4lile0/tinyGS/wiki/Arduino-IDE or /ArduinoJson/src/ArduinoJson/Configuration.hpp and amend to #define ARDUINOJSON_USE_LONG_LONG 1 around line 68"
@@ -297,6 +299,9 @@ uint8_t Radio::listen()
     respLen = l->getPacketLength();
     respFrame = new uint8_t[respLen];
     state = l->readData(respFrame, respLen);
+    decode_conv(respFrame,respLen);
+    deinterleave(respFrame, sizeof(respFrame));
+    decode_rs(respFrame,sizeof(respFrame));
     newPacketInfo.rssi = l->getRSSI();
     newPacketInfo.snr = l->getSNR();
   }
@@ -980,4 +985,52 @@ int Radio::_atoi(const char *buff, size_t length)
   memcpy(str, buff, length);
   str[length] = '\0';
   return atoi(str);
+}
+
+void  Radio::decode_conv(uint8_t* data, size_t length)
+{
+  correct_convolutional *conv = correct_convolutional_create(RATE_CON, ORDER_CON, correct_conv_r12_7_polynomial);
+  int index = ceil(length/RATE_CON);
+  uint8_t conv_decoded[index];
+  ssize_t decoded_conv_size = correct_convolutional_decode(conv, data, length*8, conv_decoded);
+  data = conv_decoded;
+}
+
+void  Radio::deinterleave(uint8_t* data, size_t length)
+{
+  bool end = false;
+	int q = 0;
+	int r = 0;
+	int col;
+	int row;
+	char block[BLOCK_ROW_INTER][BLOCK_COL_INTER];
+  unsigned char codeword_deinterleaved[length];
+
+	while(q < length){
+		for(col=0; col < BLOCK_COL_INTER && !end; col++){
+			for(row=0; row < BLOCK_ROW_INTER && !end; row++){
+				if (q < length){
+					block[row][col] = data[q];
+					q++;
+				}
+				else{
+					end = true;
+				}
+			}
+		}
+		for(int t = 0; t < BLOCK_COL_INTER; t++){
+			for(int p = 0; p < BLOCK_ROW_INTER; p++){
+					codeword_deinterleaved[r] = block[t][p];
+					r++;
+			}
+		}
+	}
+}
+
+void  Radio::decode_rs(uint8_t* data, size_t length)
+{
+  correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
+  uint8_t rs_decoded[MESSAGE_LENGTH_RS];
+  ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
+  data = rs_decoded; 
 }

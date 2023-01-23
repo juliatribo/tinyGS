@@ -67,6 +67,9 @@ public:
   int16_t remote_SPIreadRegister(char* payload, size_t payload_len);
   int16_t sendTx(uint8_t* data, size_t length);
   int16_t sendTestPacket();
+  void decode_conv(uint8_t* data, size_t length);
+  void deinterleave(uint8_t* data, size_t length);
+  void decode_rs(uint8_t* data, size_t length);
   byte RESET_TC[3] = {0xC8, 0x9D, 0x01};
   byte NOMINAL_TC[4] = {0xC8, 0x9D, 0x02, 0x5A}; // 90%
   byte LOW_TC[4] = {0xC8, 0x9D, 0x03, 0x50}; // 80%
@@ -106,6 +109,8 @@ private:
 
   double _atof(const char* buff, size_t length);
   int _atoi(const char* buff, size_t length);
+
 };
+
 
 #endif
