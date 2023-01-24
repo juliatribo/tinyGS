@@ -18,6 +18,7 @@
 */
 
 #include "Radio.h"
+#include "correct/rs/ecc.h"
 #include "correct/reed-solomon.h"
 #include "correct/convolutional.h"
 #include "ArduinoJson.h"
@@ -1052,8 +1053,25 @@ void  Radio::deinterleave(uint8_t* data, size_t length)
 
 void  Radio::decode_rs(uint8_t* data, size_t length)
 {
+  /*
   correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
   uint8_t rs_decoded[MESSAGE_LENGTH_RS];
   ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
   memcpy(data, rs_decoded,size_decode);
+  */
+  decode_data(data, length);
+  int erasures[16];
+  int nerasures = 0;
+  int syndrome = check_syndrome();
+  /* check if syndrome is all zeros */
+  if (syndrome == 0) {
+    // no errs detected, codeword payload should match message
+    Log::console(PSTR("No errors detected, codeword payload should match message"));
+  } else {
+    //nonzero syndrome, attempting correcting errors
+    int result = 0;//result 0 not able to correct, result 1 corrected
+    Log::console(PSTR("Errors detected, proceeding to correct errors"));
+    result =correct_errors_erasures (data,length,nerasures,erasures);
+  }
+
 }
