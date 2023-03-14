@@ -324,18 +324,22 @@ uint8_t Radio::listen()
 
   if (state == ERR_NONE && respLen > 0)
   {
+    
     // read optional data
+
     Log::console(PSTR("Packet encoded (%u bytes):"), respLen);
-    uint16_t buffSize = respLen * 2 + 1;
+    uint16_t buffSize = respLen * 3 + 1;
     if (buffSize > 255)
       buffSize = 255;
     char *rx_str = new char[buffSize];
     for (int i = 0; i < respLen; i++)
     {
-      sprintf(rx_str + i * 2 % (buffSize - 1), "%02x", respFrame[i]);
-      if (i * 2 % buffSize == buffSize - 3 || i == respLen - 1)
+      sprintf(rx_str + i * 3 % (buffSize - 1), " %02x", respFrame[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == respLen - 1)
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
+
+    
     //read convolution decoded
     int index = ceil(respLen/RATE_CON);
     Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
@@ -345,8 +349,8 @@ uint8_t Radio::listen()
     decode_conv(data_deconv,respLen);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv + i * 2 % (buffSize - 1), "%02x", data_deconv[i]);
-      if (i * 2 % buffSize == buffSize - 3 || i == index - 1)
+      sprintf(rx_str_deconv + i * 3 % (buffSize - 1), " %02x", data_deconv[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv); // print before the buffer is going to loop back
     }
 
@@ -358,9 +362,9 @@ uint8_t Radio::listen()
     //delete padding of interleaved
     bool end = false;
     while(!end){
-      if(data_deconv_deinter[index-1]==0x00)
+      if(data_deconv_deinter[index-1]!=0xFF)
         index--;
-      else if(data_deconv_deinter[index-1]==0xFF){
+      else{
         index --;
         end = true;
       }
@@ -368,8 +372,8 @@ uint8_t Radio::listen()
     Log::console(PSTR("Packet convolution decoded and deinterleaved (%u bytes):"), index);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv_deinter + i * 2 % (buffSize - 1), "%02x", data_deconv_deinter[i]);
-      if (i * 2 % buffSize == buffSize - 3 || i == index - 1)
+      sprintf(rx_str_deconv_deinter + i * 3 % (buffSize - 1), " %02x", data_deconv_deinter[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv_deinter); // print before the buffer is going to loop back
     }
 
@@ -381,8 +385,8 @@ uint8_t Radio::listen()
     decode_rs(data_deconv_deinter_ders,index);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv_deinter_ders + i * 2 % (buffSize - 1), "%02x", data_deconv_deinter_ders[i]);
-      if (i * 2 % buffSize == buffSize - 3 || i == index - 1)
+      sprintf(rx_str_deconv_deinter_ders + i * 3 % (buffSize - 1), " %02x", data_deconv_deinter_ders[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv_deinter_ders); // print before the buffer is going to loop back
     }
 
@@ -393,8 +397,8 @@ uint8_t Radio::listen()
     memcpy(packet_data,data_deconv_deinter_ders,index - NPAR);
     for (int i = 0; i < index - NPAR; i++)
     {
-      sprintf(rx_data + i * 2 % (buffSize - 1), "%02x", packet_data[i]);
-      if (i * 2 % buffSize == buffSize - 3 || i == index - NPAR - 1)
+      sprintf(rx_data + i * 3 % (buffSize - 1), " %02x", packet_data[i]);
+      if (i * 3 % buffSize == buffSize - 4 || i == index - NPAR - 1)
         Log::console(PSTR("%s"), rx_data); // print before the buffer is going to loop back
     }
 
@@ -425,6 +429,7 @@ uint8_t Radio::listen()
     }
 
     status.lastPacketInfo.crc_error = false;
+    //String encoded = base64::encode(packet_data, index-4);
     String encoded = base64::encode(respFrame, respLen);
     MQTT_Client::getInstance().sendRx(encoded, noisyInterrupt);
   }

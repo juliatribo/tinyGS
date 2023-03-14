@@ -22,6 +22,9 @@
 #include "../Logger/Logger.h"
 #include "../Radio/Radio.h"
 #include "../Display/graphics.h"
+#include "../radio/correct/rs/ecc.h"
+#include "../radio/correct/reed-solomon.h"
+#include "../radio/correct/convolutional.h"
 #include "ArduinoJson.h"
 #if ARDUINOJSON_USE_LONG_LONG == 0 && !PLATFORMIO
 #error "Using Arduino IDE is not recommended, please follow this guide https://github.com/G4lile0/tinyGS/wiki/Arduino-IDE or edit /ArduinoJson/src/ArduinoJson/Configuration.hpp and amend to #define ARDUINOJSON_USE_LONG_LONG 1 around line 68"
@@ -323,13 +326,22 @@ void ConfigManager::handleRefreshConsole()
         {
           Log::console(PSTR("Please wait a few seconds to send another test packet."));
         }
-        else{
-        Radio &radio = Radio::getInstance();
-        radio.sendTx(radio.TLE_TC_1, sizeof(radio.TLE_TC_1));
-        delay(500);
-        radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
-        lastTestPacketTime = millis();
-        Log::console(PSTR("Sending TLE_TC packets!"));
+        else
+        {
+          Radio &radio = Radio::getInstance();
+          uint8_t telecomand_encoded[256];
+          int size = encode(radio.TLE_TC_1,  sizeof(radio.TLE_TC_1), telecomand_encoded);
+          uint8_t telecomand_encoded2[256];
+          int size2 = encode(radio.TLE_TC_2,  sizeof(radio.TLE_TC_2), telecomand_encoded2);
+
+
+          radio.sendTx(telecomand_encoded, size);
+          delay(500);
+          //radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
+          radio.sendTx(telecomand_encoded2, size2);
+          lastTestPacketTime = millis();
+          Log::console(PSTR("Sending TLE_TC packets!"));
+          
         }
       }
     }
@@ -440,26 +452,102 @@ void ConfigManager::handleRefreshConsole()
   server.client().stop();
 }
 
+int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
+
+    unsigned char codeword[256];
+    unsigned char telecomand[256];
+    initialize_ecc ();
+    srand(time(NULL));   // Initialization, should only be called once.
+    memcpy(telecomand, TC, length);
+    encode_data(telecomand, length, codeword);
+    int size = length + NPAR;
+    Log::console(PSTR("Packet reed solomon encoded (%u bytes):"), size);
+    char rs_str[size*2] = "";
+    char buffer_rs[2] = "";
+    for (int i = 0; i < size; i++)
+    {
+      sprintf(buffer_rs , " %02x", codeword[i]);
+      strcat(rs_str, buffer_rs);
+      if ( i == size - 1)
+        Log::console(PSTR("%s"), rs_str); //print before the buffer is going to loop back
+    }
+
+    codeword[size] = 0xFF;
+    size++;
+    for(int i = 1; ((length + NPAR + i) % (BLOCK_COL_INTER*BLOCK_ROW_INTER)) != 0; i++){
+      codeword[length + NPAR + i] = 0;
+      size++;
+    }
+
+    //INTERLEAVE
+    Radio &radio = Radio::getInstance();
+    radio.deinterleave(codeword, size);
+    Log::console(PSTR("Packet reed solomon encoded and interleaved (%u bytes):"), size);
+    char int_str[size*2] = "";
+    char buffer_int[2] = "";
+    for (int i = 0; i < size; i++)
+    {
+      sprintf(buffer_int , " %02x", codeword[i]);
+      strcat(int_str, buffer_int);
+      if ( i == size - 1)
+        Log::console(PSTR("%s"), int_str); // print before the buffer is going to loop back
+    }
+
+    //ENCODE CONVOLUTIONAL
+
+    uint8_t msg[size];
+    memcpy(msg, codeword, size);
+    //print_word(ML, msg);
+
+    correct_convolutional *conv;
+
+    //create convolutional config
+    conv = correct_convolutional_create(RATE_CON, ORDER_CON, correct_conv_r12_7_polynomial);
+
+    //encode message
+    size_t encoded_len_bits = correct_convolutional_encode(conv,msg,size,conv_encoded);
+    int encoded_len_bytes = ceil(encoded_len_bits/8);
+    
+    Log::console(PSTR("Packet turbo encoded sent(%u bytes):"), encoded_len_bytes);
+    char cc_str[size*2] = "";
+    char buffer_cc[2] = "";
+    for (int i = 0; i < encoded_len_bytes; i++)
+    {
+      sprintf(buffer_cc , " %02x", conv_encoded[i]);
+      strcat(cc_str, buffer_cc);
+      if ( i == encoded_len_bytes - 1)
+        Log::console(PSTR("%s"), cc_str); // print before the buffer is going to loop back
+    }
+
+    return encoded_len_bytes;
+}
+
 void ConfigManager::txTC(byte* TC, const char* TC_name,  size_t length)
 {
+
   if (!getAllowTx())
   {
     Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
   }
   else
   {
+    Radio &radio = Radio::getInstance();
+
+    uint8_t telecomand_encoded[256];
+    int size = encode(TC,  length, telecomand_encoded);
+
     static long lastPacketTime = 0;
     if (millis() - lastPacketTime < 20*1000)
     {
       Log::console(PSTR("Please wait a few seconds to send another test packet."));
-    }
-            
+    }     
+
     else
     {
       Radio &radio = Radio::getInstance();
-      radio.sendTx(TC, length);
+      radio.sendTx(telecomand_encoded, size);
       lastPacketTime = millis();
-      Log::console(PSTR("Sending %s TC packet!"),TC_name);
+      Log::console(PSTR("Sending %s TC packet!") ,TC_name);
     }
   }
 }
