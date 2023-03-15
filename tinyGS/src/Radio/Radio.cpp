@@ -429,8 +429,7 @@ uint8_t Radio::listen()
     }
 
     status.lastPacketInfo.crc_error = false;
-    //String encoded = base64::encode(packet_data, index-4);
-    String encoded = base64::encode(respFrame, respLen);
+    String encoded = base64::encode(packet_data, index - NPAR);
     MQTT_Client::getInstance().sendRx(encoded, noisyInterrupt);
   }
   else if (state == ERR_CRC_MISMATCH)
