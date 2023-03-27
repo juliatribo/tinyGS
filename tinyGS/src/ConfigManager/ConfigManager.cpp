@@ -353,7 +353,9 @@ void ConfigManager::handleRefreshConsole()
     else if (strcmp(svalue.c_str(), "20") == 0)
     {
       Radio &radio = Radio::getInstance();
-      txTC(radio.SEND_DATA_TC,"SEND DATA",sizeof(radio.SEND_DATA_TC));   
+      txTC(radio.SEND_DATA_TC,"SEND DATA",sizeof(radio.SEND_DATA_TC));
+      bool data = true;
+      *radio.send_data = data;
     }
     else if (strcmp(svalue.c_str(), "21") == 0)
     {
@@ -466,7 +468,7 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
     char buffer_rs[2] = "";
     for (int i = 0; i < size; i++)
     {
-      sprintf(buffer_rs , " %02x", codeword[i]);
+      sprintf(buffer_rs , "%02x ", codeword[i]);
       strcat(rs_str, buffer_rs);
       if ( i == size - 1)
         Log::console(PSTR("%s"), rs_str); //print before the buffer is going to loop back
@@ -487,7 +489,7 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
     char buffer_int[2] = "";
     for (int i = 0; i < size; i++)
     {
-      sprintf(buffer_int , " %02x", codeword[i]);
+      sprintf(buffer_int , "%02x ", codeword[i]);
       strcat(int_str, buffer_int);
       if ( i == size - 1)
         Log::console(PSTR("%s"), int_str); // print before the buffer is going to loop back
@@ -513,7 +515,7 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
     char buffer_cc[2] = "";
     for (int i = 0; i < encoded_len_bytes; i++)
     {
-      sprintf(buffer_cc , " %02x", conv_encoded[i]);
+      sprintf(buffer_cc , "%02x ", conv_encoded[i]);
       strcat(cc_str, buffer_cc);
       if ( i == encoded_len_bytes - 1)
         Log::console(PSTR("%s"), cc_str); // print before the buffer is going to loop back

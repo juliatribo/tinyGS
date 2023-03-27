@@ -27,6 +27,10 @@
 #endif
 #include <base64.h>
 #include "../Logger/Logger.h"
+#include <chrono>
+#include <sstream>
+
+
 bool received = false;
 bool eInterrupt = true;
 bool noisyInterrupt = false;
@@ -46,6 +50,11 @@ void Radio::init()
     size_t size = 512;
     DynamicJsonDocument doc(size);
     DeserializationError error = deserializeJson(doc, ConfigManager::getInstance().getBoardTemplate());
+    bool initDataState = false;
+    *send_data = initDataState;
+    int initDataPacket = 0;
+    *last_data_packet = initDataPacket;
+    std::chrono::high_resolution_clock::now();
 
     if (error.code() != DeserializationError::Ok || !doc.containsKey("radio"))
     {
@@ -321,12 +330,18 @@ uint8_t Radio::listen()
 
   // print RSSI (Received Signal Strength Indicator)
   Log::console(PSTR("[SX12x8] RSSI:\t\t%f dBm\n[SX12x8] SNR:\t\t%f dB\n[SX12x8] Frequency error:\t%f Hz"), status.lastPacketInfo.rssi, status.lastPacketInfo.snr, status.lastPacketInfo.frequencyerror);
+  
+  // initialize static variable with current time
+  static auto lastTime = std::chrono::high_resolution_clock::now();
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  //compute time since last packet received
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
+  // update lastTime with current time for the next call
+  lastTime = currentTime;
 
   if (state == ERR_NONE && respLen > 0)
-  {
-    
+  { 
     // read optional data
-
     Log::console(PSTR("Packet encoded (%u bytes):"), respLen);
     uint16_t buffSize = respLen * 3 + 1;
     if (buffSize > 255)
@@ -334,7 +349,7 @@ uint8_t Radio::listen()
     char *rx_str = new char[buffSize];
     for (int i = 0; i < respLen; i++)
     {
-      sprintf(rx_str + i * 3 % (buffSize - 1), " %02x", respFrame[i]);
+      sprintf(rx_str + i * 3 % (buffSize - 1), "%02x ", respFrame[i]);
       if (i * 3 % buffSize == buffSize - 3 || i == respLen - 1)
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
@@ -349,7 +364,7 @@ uint8_t Radio::listen()
     decode_conv(data_deconv,respLen);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv + i * 3 % (buffSize - 1), " %02x", data_deconv[i]);
+      sprintf(rx_str_deconv + i * 3 % (buffSize - 1), "%02x ", data_deconv[i]);
       if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv); // print before the buffer is going to loop back
     }
@@ -372,7 +387,7 @@ uint8_t Radio::listen()
     Log::console(PSTR("Packet convolution decoded and deinterleaved (%u bytes):"), index);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv_deinter + i * 3 % (buffSize - 1), " %02x", data_deconv_deinter[i]);
+      sprintf(rx_str_deconv_deinter + i * 3 % (buffSize - 1), "%02x ", data_deconv_deinter[i]);
       if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv_deinter); // print before the buffer is going to loop back
     }
@@ -385,21 +400,71 @@ uint8_t Radio::listen()
     decode_rs(data_deconv_deinter_ders,index);
     for (int i = 0; i < index; i++)
     {
-      sprintf(rx_str_deconv_deinter_ders + i * 3 % (buffSize - 1), " %02x", data_deconv_deinter_ders[i]);
+      sprintf(rx_str_deconv_deinter_ders + i * 3 % (buffSize - 1), "%02x ", data_deconv_deinter_ders[i]);
       if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv_deinter_ders); // print before the buffer is going to loop back
     }
 
-    //read data packet
+    //read data packet  
     Log::console(PSTR("Packet data (%u bytes):"), index - NPAR);
-    char *rx_data = new char[buffSize-NPAR];
+    char *rx_data = new char[buffSize];
     uint8_t packet_data[index - NPAR];
     memcpy(packet_data,data_deconv_deinter_ders,index - NPAR);
     for (int i = 0; i < index - NPAR; i++)
     {
-      sprintf(rx_data + i * 3 % (buffSize - 1), " %02x", packet_data[i]);
-      if (i * 3 % buffSize == buffSize - 4 || i == index - NPAR - 1)
+      sprintf(rx_data + i * 3 % (buffSize - 1), "%02x ", packet_data[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - NPAR - 1)
         Log::console(PSTR("%s"), rx_data); // print before the buffer is going to loop back
+    }
+
+    //send_data ack  
+   
+    if (send_data){
+      //add the correct received packets to the ack_data vector
+      ACK_DATA_TC[0] = 0xC8;
+      ACK_DATA_TC[1] = 0x9D;
+      int index_ack = *last_data_packet;
+      index_ack = index_ack + 2;
+      ACK_DATA_TC[index_ack]=0x01;
+      if ( *last_data_packet!=0 && (packet_data[2] == 0x14 || duration > std::chrono::seconds(10))){ 
+        /*
+        NACK_DATA[0] = 0xC8;
+        NACK_DATA[1] = 0x9D;
+        int nack_index = 2;
+        for (int i = 0; i < 20; i++){ //the data is divided in 20 packets
+          for (int j = 0; j < *last_data_packet; j++){
+            //convert ack_data values to decimal in order to compare it to i
+            int decimalInt = hexByteToDecimalInt(ACK_DATA_TC[j]);
+
+            if (i != decimalInt){
+              NACK_DATA[nack_index] = ACK_DATA_TC[j];
+              nack_index++;
+            }
+            
+          }
+        } */  
+         
+        Log::console(PSTR("Received packets (%u bytes):"), 20);
+        char *ack_rx_data = new char[buffSize];
+        uint8_t ack_data[20];
+        memcpy(ack_data,ACK_DATA_TC,20);
+        for (int i = 0; i < 20; i++)
+        {
+          sprintf(ack_rx_data + i * 3 % (buffSize - 1), "%02x ", ack_data[i]);
+          if (i * 3 % buffSize == buffSize - 3 || i == 20 - 1)
+            Log::console(PSTR("%s"), ack_rx_data); // print before the buffer is going to loop back
+        }
+    
+
+        bool modify = false;
+        *send_data = modify;
+        uint8_t ini_packet = 0;
+        *last_data_packet = ini_packet;
+      }
+
+      uint8_t packet = *last_data_packet;
+      packet++;
+      *last_data_packet = packet;
     }
 
     // if Filter enabled filter the received packet
@@ -1117,4 +1182,13 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
     result =correct_errors_erasures (data,length,nerasures,erasures);
   }
 
+}
+
+int Radio::hexByteToDecimalInt(uint8_t hexByte) {
+    int result = 0;
+
+    result += (hexByte >> 4) * 10;
+    result += (hexByte & 0x0F);
+
+    return result;
 }
