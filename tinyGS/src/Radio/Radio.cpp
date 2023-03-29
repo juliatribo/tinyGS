@@ -34,6 +34,8 @@
 bool received = false;
 bool eInterrupt = true;
 bool noisyInterrupt = false;
+bool send_data;
+int last_data_packet;
 
 Radio::Radio()
     : spi(VSPI)
@@ -50,10 +52,9 @@ void Radio::init()
     size_t size = 512;
     DynamicJsonDocument doc(size);
     DeserializationError error = deserializeJson(doc, ConfigManager::getInstance().getBoardTemplate());
-    bool initDataState = false;
-    *send_data = initDataState;
-    int initDataPacket = 0;
-    *last_data_packet = initDataPacket;
+    
+    send_data = false;
+    last_data_packet = 0;
     std::chrono::high_resolution_clock::now();
 
     if (error.code() != DeserializationError::Ok || !doc.containsKey("radio"))
@@ -331,6 +332,7 @@ uint8_t Radio::listen()
   // print RSSI (Received Signal Strength Indicator)
   Log::console(PSTR("[SX12x8] RSSI:\t\t%f dBm\n[SX12x8] SNR:\t\t%f dB\n[SX12x8] Frequency error:\t%f Hz"), status.lastPacketInfo.rssi, status.lastPacketInfo.snr, status.lastPacketInfo.frequencyerror);
   
+  
   // initialize static variable with current time
   static auto lastTime = std::chrono::high_resolution_clock::now();
   auto currentTime = std::chrono::high_resolution_clock::now();
@@ -338,6 +340,7 @@ uint8_t Radio::listen()
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
   // update lastTime with current time for the next call
   lastTime = currentTime;
+  
 
   if (state == ERR_NONE && respLen > 0)
   { 
@@ -354,7 +357,7 @@ uint8_t Radio::listen()
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
 
-    
+    /*
     //read convolution decoded
     int index = ceil(respLen/RATE_CON);
     Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
@@ -418,15 +421,14 @@ uint8_t Radio::listen()
     }
 
     //send_data ack  
-   
+    
     if (send_data){
       //add the correct received packets to the ack_data vector
       ACK_DATA_TC[0] = 0xC8;
       ACK_DATA_TC[1] = 0x9D;
-      int index_ack = *last_data_packet;
-      index_ack = index_ack + 2;
-      ACK_DATA_TC[index_ack]=0x01;
-      if ( *last_data_packet!=0 && (packet_data[2] == 0x14 || duration > std::chrono::seconds(10))){ 
+      ACK_DATA_TC[last_data_packet + 2 ]=0x01;
+      if ( last_data_packet!=0 && (packet_data[2] == 0x14 || duration > std::chrono::seconds(10))){ 
+    */        
         /*
         NACK_DATA[0] = 0xC8;
         NACK_DATA[1] = 0x9D;
@@ -442,8 +444,9 @@ uint8_t Radio::listen()
             }
             
           }
-        } */  
-         
+        } 
+         */
+    /*
         Log::console(PSTR("Received packets (%u bytes):"), 20);
         char *ack_rx_data = new char[buffSize];
         uint8_t ack_data[20];
@@ -456,17 +459,14 @@ uint8_t Radio::listen()
         }
     
 
-        bool modify = false;
-        *send_data = modify;
-        uint8_t ini_packet = 0;
-        *last_data_packet = ini_packet;
+        send_data = false;
+        last_data_packet = 0;
       }
 
-      uint8_t packet = *last_data_packet;
-      packet++;
-      *last_data_packet = packet;
+      last_data_packet ++;
     }
-
+    */
+    
     // if Filter enabled filter the received packet
     if (status.modeminfo.filter[0] != 0)
     {
@@ -494,7 +494,8 @@ uint8_t Radio::listen()
     }
 
     status.lastPacketInfo.crc_error = false;
-    String encoded = base64::encode(packet_data, index - NPAR);
+   //String encoded = base64::encode(packet_data, index - NPAR);
+    String encoded = base64::encode(respFrame, respLen);
     MQTT_Client::getInstance().sendRx(encoded, noisyInterrupt);
   }
   else if (state == ERR_CRC_MISMATCH)
@@ -1113,7 +1114,7 @@ int Radio::_atoi(const char *buff, size_t length)
   str[length] = '\0';
   return atoi(str);
 }
-
+/*
 void  Radio::decode_conv(uint8_t* data, size_t length)
 {
   correct_convolutional *conv = correct_convolutional_create(RATE_CON, ORDER_CON, correct_conv_r12_7_polynomial);
@@ -1122,7 +1123,7 @@ void  Radio::decode_conv(uint8_t* data, size_t length)
   ssize_t decoded_conv_size = correct_convolutional_decode(conv, data, length*8, conv_decoded);
   memcpy(data, conv_decoded,decoded_conv_size);
 }
-
+*/
 void  Radio::deinterleave(uint8_t* data, size_t length)
 {
   bool end = false;
@@ -1154,15 +1155,16 @@ void  Radio::deinterleave(uint8_t* data, size_t length)
 	}
   memcpy(data,codeword_deinterleaved,length);
 }
-
+/*
 void  Radio::decode_rs(uint8_t* data, size_t length)
 {
+  */
   /*
   correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
   uint8_t rs_decoded[MESSAGE_LENGTH_RS];
   ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
   memcpy(data, rs_decoded,size_decode);
-  */
+  
   initialize_ecc();
   srand(time(NULL));
   unsigned char *data_ch[length];
@@ -1171,7 +1173,9 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
   int erasures[16];
   int nerasures = 0;
   int syndrome = check_syndrome();
-  /* check if syndrome is all zeros */
+  */
+  // check if syndrome is all zeros 
+/*
   if (syndrome == 0) {
     // no errs detected, codeword payload should match message
     Log::console(PSTR("No errors detected, codeword payload should match message"));
@@ -1192,3 +1196,8 @@ int Radio::hexByteToDecimalInt(uint8_t hexByte) {
 
     return result;
 }
+
+void Radio::isSendData(bool send){
+  send_data = send;
+}
+*/

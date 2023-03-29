@@ -71,6 +71,7 @@ public:
   void deinterleave(uint8_t* data, size_t length);
   void decode_rs(uint8_t* data, size_t length);
   int hexByteToDecimalInt(uint8_t hexByte);
+  void isSendData(bool send);
   byte RESET_TC[3] = {0xC8, 0x9D, 0x01};
   byte NOMINAL_TC[4] = {0xC8, 0x9D, 0x02, 0x5A}; // 90%
   byte LOW_TC[4] = {0xC8, 0x9D, 0x03, 0x50}; // 80%
@@ -100,9 +101,7 @@ public:
   byte TAKE_RF_TC[3] = {0xC8, 0x9D, 0x28};
   byte SEND_CONFIG_TC[3] = {0xC8, 0x9D, 0x32};
 
-  bool *send_data;
-  int *last_data_packet;
-  byte NACK_DATA[23];
+ //byte NACK_DATA[23] = {0xC8, 0x9D, 0x33};
 
   
 private:

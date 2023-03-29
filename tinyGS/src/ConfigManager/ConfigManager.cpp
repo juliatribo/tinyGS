@@ -353,9 +353,8 @@ void ConfigManager::handleRefreshConsole()
     else if (strcmp(svalue.c_str(), "20") == 0)
     {
       Radio &radio = Radio::getInstance();
+      //radio.isSendData(true);
       txTC(radio.SEND_DATA_TC,"SEND DATA",sizeof(radio.SEND_DATA_TC));
-      bool data = true;
-      *radio.send_data = data;
     }
     else if (strcmp(svalue.c_str(), "21") == 0)
     {
