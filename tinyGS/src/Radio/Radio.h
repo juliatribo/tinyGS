@@ -29,7 +29,16 @@
 #include "../Status.h"
 #include "../Mqtt/MQTT_Client.h"
 
+#ifndef GLOBALS_H
+#define GLOBALS_H
+
+extern bool send_data;
+extern bool send_config;
+extern bool send_telemetry;
 extern Status status;
+
+#endif // GLOBALS_H
+
 
 class Radio {
 public:
@@ -70,8 +79,6 @@ public:
   void decode_conv(uint8_t* data, size_t length);
   void deinterleave(uint8_t* data, size_t length);
   void decode_rs(uint8_t* data, size_t length);
-  int hexByteToDecimalInt(uint8_t hexByte);
-  void isSendData(bool send);
   byte RESET_TC[3] = {0xC8, 0x9D, 0x01};
   byte NOMINAL_TC[4] = {0xC8, 0x9D, 0x02, 0x5A}; // 90%
   byte LOW_TC[4] = {0xC8, 0x9D, 0x03, 0x50}; // 80%
@@ -100,8 +107,9 @@ public:
   byte TAKE_PHOTO_TC[3] = {0xC8, 0x9D, 0x1E};
   byte TAKE_RF_TC[3] = {0xC8, 0x9D, 0x28};
   byte SEND_CONFIG_TC[3] = {0xC8, 0x9D, 0x32};
+  byte NACK_TELEMETRY_TC[3] = {0xC8, 0x9D, 0x33};
+  byte NACK_CONFIG_TC[3] = {0xC8, 0x9D, 0x34};
 
- //byte NACK_DATA[23] = {0xC8, 0x9D, 0x33};
 
   
 private:

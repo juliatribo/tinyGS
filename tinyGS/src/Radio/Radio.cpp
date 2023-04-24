@@ -30,11 +30,12 @@
 #include <chrono>
 #include <sstream>
 
-
+bool send_data = false;
+bool send_config = false;
+bool send_telemetry = false;
 bool received = false;
 bool eInterrupt = true;
 bool noisyInterrupt = false;
-bool send_data;
 int last_data_packet;
 
 Radio::Radio()
@@ -54,6 +55,8 @@ void Radio::init()
     DeserializationError error = deserializeJson(doc, ConfigManager::getInstance().getBoardTemplate());
     
     send_data = false;
+    send_config = false;
+    send_telemetry = false;
     last_data_packet = 0;
     std::chrono::high_resolution_clock::now();
 
@@ -345,7 +348,7 @@ uint8_t Radio::listen()
   if (state == ERR_NONE && respLen > 0)
   { 
     // read optional data
-    Log::console(PSTR("Packet encoded (%u bytes):"), respLen);
+    Log::console(PSTR("Packet received (%u bytes):"), respLen);
     uint16_t buffSize = respLen * 3 + 1;
     if (buffSize > 255)
       buffSize = 255;
@@ -357,7 +360,7 @@ uint8_t Radio::listen()
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
 
-    /*
+  /* 
     //read convolution decoded
     int index = ceil(respLen/RATE_CON);
     Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
@@ -419,53 +422,54 @@ uint8_t Radio::listen()
       if (i * 3 % buffSize == buffSize - 3 || i == index - NPAR - 1)
         Log::console(PSTR("%s"), rx_data); // print before the buffer is going to loop back
     }
+  */
 
+  
     //send_data ack  
     
     if (send_data){
-      //add the correct received packets to the ack_data vector
-      ACK_DATA_TC[0] = 0xC8;
-      ACK_DATA_TC[1] = 0x9D;
-      ACK_DATA_TC[last_data_packet + 2 ]=0x01;
-      if ( last_data_packet!=0 && (packet_data[2] == 0x14 || duration > std::chrono::seconds(10))){ 
-    */        
-        /*
-        NACK_DATA[0] = 0xC8;
-        NACK_DATA[1] = 0x9D;
-        int nack_index = 2;
-        for (int i = 0; i < 20; i++){ //the data is divided in 20 packets
-          for (int j = 0; j < *last_data_packet; j++){
-            //convert ack_data values to decimal in order to compare it to i
-            int decimalInt = hexByteToDecimalInt(ACK_DATA_TC[j]);
-
-            if (i != decimalInt){
-              NACK_DATA[nack_index] = ACK_DATA_TC[j];
-              nack_index++;
-            }
-            
-          }
-        } 
-         */
-    /*
-        Log::console(PSTR("Received packets (%u bytes):"), 20);
+      if (last_data_packet == 0){
+        //add the correct received packets to the ack_data vector
+        ACK_DATA_TC[0] = 0xC8;
+        ACK_DATA_TC[1] = 0x9D;
+        ACK_DATA_TC[2] = 0x17;
+      }
+      int received_index = respFrame[2] + 3;
+      ACK_DATA_TC[received_index]=0x01;
+      //ACK_DATA_TC[last_data_packet+3] = respFrame[2];
+      if (((respFrame[2] == 0x13)||( duration > std::chrono::minutes(1)))&& last_data_packet>0){ 
+       
+        Log::console(PSTR("Received packets (%u bytes):"), sizeof(ACK_DATA_TC));
         char *ack_rx_data = new char[buffSize];
-        uint8_t ack_data[20];
-        memcpy(ack_data,ACK_DATA_TC,20);
-        for (int i = 0; i < 20; i++)
+        uint8_t ack_data[sizeof(ACK_DATA_TC)];
+        memcpy(ack_data,ACK_DATA_TC,sizeof(ACK_DATA_TC));
+        for (int i = 0; i < sizeof(ACK_DATA_TC); i++)
         {
           sprintf(ack_rx_data + i * 3 % (buffSize - 1), "%02x ", ack_data[i]);
-          if (i * 3 % buffSize == buffSize - 3 || i == 20 - 1)
+          if (i * 3 % buffSize == buffSize - 3 || i == sizeof(ACK_DATA_TC)-1)
             Log::console(PSTR("%s"), ack_rx_data); // print before the buffer is going to loop back
         }
-    
-
         send_data = false;
         last_data_packet = 0;
-      }
 
+        ConfigManager& configManager = ConfigManager::getInstance();
+        uint8_t telecomand_encoded[256];
+        int size = configManager.encode(ACK_DATA_TC,  sizeof(ACK_DATA_TC), telecomand_encoded);
+        sendTx(telecomand_encoded, size);
+        delay(500);
+        sendTx(telecomand_encoded, size);
+        Log::console(PSTR("Sending ACK DATA!"));
+
+      }
       last_data_packet ++;
     }
-    */
+    if(send_config){
+      send_config = false;
+    }
+    if(send_telemetry){
+      send_telemetry = false;
+    }
+  
     
     // if Filter enabled filter the received packet
     if (status.modeminfo.filter[0] != 0)
@@ -486,7 +490,7 @@ uint8_t Radio::listen()
 
       if (filter_flag)
       {
-        Log::console(PSTR("Filter enabled, doesn't looks like the expected satellite packet"));
+        Log::console(PSTR("Filter enabled, doesn't look like the expected satellite packet"));
         delete[] respFrame;
         startRx();
         return 5;
@@ -494,7 +498,7 @@ uint8_t Radio::listen()
     }
 
     status.lastPacketInfo.crc_error = false;
-   //String encoded = base64::encode(packet_data, index - NPAR);
+    //String encoded = base64::encode(packet_data, index - NPAR);
     String encoded = base64::encode(respFrame, respLen);
     MQTT_Client::getInstance().sendRx(encoded, noisyInterrupt);
   }
@@ -563,6 +567,52 @@ uint8_t Radio::listen()
   {
     // packet was received, but is malformed
     Log::console(PSTR("[SX12x8] CRC error! Data cannot be retrieved"));
+    int16_t buffSize = respLen * 3 + 1;
+
+    if(send_config){
+
+      Log::console(PSTR("Config not received, send NACK packet (%u bytes):"), sizeof(NACK_CONFIG_TC));
+      char *nack_rx_data = new char[buffSize];
+      uint8_t nack_data[sizeof(NACK_CONFIG_TC)];
+      memcpy(nack_data,NACK_CONFIG_TC,sizeof(NACK_CONFIG_TC));
+      for (int i = 0; i < sizeof(NACK_CONFIG_TC); i++)
+      {
+        sprintf(nack_rx_data + i * 3 % (buffSize - 1), "%02x ", nack_data[i]);
+        if (i * 3 % buffSize == buffSize - 3 || i == sizeof(NACK_CONFIG_TC)-1)
+          Log::console(PSTR("%s"), nack_rx_data); // print before the buffer is going to loop back
+      }
+
+      ConfigManager& configManager = ConfigManager::getInstance();
+      uint8_t telecomand_encoded[256];
+      int size = configManager.encode(NACK_CONFIG_TC,  sizeof(NACK_CONFIG_TC), telecomand_encoded);
+      sendTx(telecomand_encoded, size);
+      delay(500);
+      sendTx(telecomand_encoded, size);
+      Log::console(PSTR("Sending NACK CONFIG!"));
+
+    }
+    if(send_telemetry){
+
+      Log::console(PSTR("Telemetry not received, send NACK packet (%u bytes):"), sizeof(NACK_TELEMETRY_TC));
+      char *nack_rx_data = new char[buffSize];
+      uint8_t nack_data[sizeof(NACK_TELEMETRY_TC)];
+      memcpy(nack_data,NACK_TELEMETRY_TC,sizeof(NACK_TELEMETRY_TC));
+      for (int i = 0; i < sizeof(NACK_TELEMETRY_TC); i++)
+      {
+        sprintf(nack_rx_data + i * 3 % (buffSize - 1), "%02x ", nack_data[i]);
+        if (i * 3 % buffSize == buffSize - 3 || i == sizeof(NACK_TELEMETRY_TC)-1)
+          Log::console(PSTR("%s"), nack_rx_data); // print before the buffer is going to loop back
+      }
+
+      ConfigManager& configManager = ConfigManager::getInstance();
+      uint8_t telecomand_encoded[256];
+      int size = configManager.encode(NACK_TELEMETRY_TC,  sizeof(NACK_TELEMETRY_TC), telecomand_encoded);
+      sendTx(telecomand_encoded, size);
+      delay(500);
+      sendTx(telecomand_encoded, size);
+      Log::console(PSTR("Sending NACK TELEMETRY!"));
+
+    }
     return 2;
   }
   else if (state == ERR_LORA_HEADER_DAMAGED)
@@ -1114,7 +1164,7 @@ int Radio::_atoi(const char *buff, size_t length)
   str[length] = '\0';
   return atoi(str);
 }
-/*
+
 void  Radio::decode_conv(uint8_t* data, size_t length)
 {
   correct_convolutional *conv = correct_convolutional_create(RATE_CON, ORDER_CON, correct_conv_r12_7_polynomial);
@@ -1123,7 +1173,7 @@ void  Radio::decode_conv(uint8_t* data, size_t length)
   ssize_t decoded_conv_size = correct_convolutional_decode(conv, data, length*8, conv_decoded);
   memcpy(data, conv_decoded,decoded_conv_size);
 }
-*/
+
 void  Radio::deinterleave(uint8_t* data, size_t length)
 {
   bool end = false;
@@ -1155,11 +1205,11 @@ void  Radio::deinterleave(uint8_t* data, size_t length)
 	}
   memcpy(data,codeword_deinterleaved,length);
 }
-/*
+
 void  Radio::decode_rs(uint8_t* data, size_t length)
 {
-  */
-  /*
+  
+  
   correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
   uint8_t rs_decoded[MESSAGE_LENGTH_RS];
   ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
@@ -1173,9 +1223,9 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
   int erasures[16];
   int nerasures = 0;
   int syndrome = check_syndrome();
-  */
+  
   // check if syndrome is all zeros 
-/*
+
   if (syndrome == 0) {
     // no errs detected, codeword payload should match message
     Log::console(PSTR("No errors detected, codeword payload should match message"));
@@ -1187,17 +1237,3 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
   }
 
 }
-
-int Radio::hexByteToDecimalInt(uint8_t hexByte) {
-    int result = 0;
-
-    result += (hexByte >> 4) * 10;
-    result += (hexByte & 0x0F);
-
-    return result;
-}
-
-void Radio::isSendData(bool send){
-  send_data = send;
-}
-*/
