@@ -589,6 +589,7 @@ uint8_t Radio::listen()
       delay(500);
       sendTx(telecomand_encoded, size);
       Log::console(PSTR("Sending NACK CONFIG!"));
+      send_config=false;
 
     }
     if(send_telemetry){
@@ -611,6 +612,7 @@ uint8_t Radio::listen()
       delay(500);
       sendTx(telecomand_encoded, size);
       Log::console(PSTR("Sending NACK TELEMETRY!"));
+      send_telemetry=false;
 
     }
     return 2;
