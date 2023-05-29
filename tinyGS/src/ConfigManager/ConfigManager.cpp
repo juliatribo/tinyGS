@@ -16,7 +16,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
+#include <time.h>
+#include <stdint.h>
+#include <stdio.h>
 #include "ConfigManager.h"
 #include "../Mqtt/MQTT_Client.h"
 #include "../Logger/Logger.h"
@@ -275,35 +277,69 @@ void ConfigManager::handleRefreshConsole()
     }
     else if (strcmp(svalue.c_str(), "2") == 0)
     {
-      txTC(radio.NOMINAL_TC,"NOMINAL", sizeof(radio.NOMINAL_TC));
-    }
-    else if (strcmp(svalue.c_str(), "3") == 0)
-    {
-      txTC(radio.LOW_TC,"LOW", sizeof(radio.LOW_TC));
-    }
-    else if (strcmp(svalue.c_str(), "4") == 0)
-    {
-      txTC(radio.CRITICAL_TC,"CRITICAL", sizeof(radio.CRITICAL_TC));
-    }
-    else if (strcmp(svalue.c_str(), "5") == 0)
-    {
-      txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER", sizeof(radio.EXIT_LOW_POWER_TC));
-    }
-    else if (strcmp(svalue.c_str(), "6") == 0)
-    {
-      txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY", sizeof(radio.EXIT_CONTINGENCY_TC));
-    }
-    else if (strcmp(svalue.c_str(), "7") == 0)
-    {
-      txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE",sizeof(radio.EXIT_SUNSAFE_TC));
-    }
-    else if (strcmp(svalue.c_str(), "8") == 0)
-    {
-      txTC(radio.SET_TIME_TC,"SET TIME",sizeof(radio.SET_TIME_TC));
+      txTC(radio.EXIT_STATE_TC,"EXIT STATE", sizeof(radio.EXIT_STATE_TC));
     }
     else if (strcmp(svalue.c_str(), "10") == 0)
     {
-      txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP",sizeof(radio.SET_CONSTANT_KP_TC));
+      if (!getAllowTx())
+        {
+          Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+        }
+      else{
+        static long lastTestPacketTime = 0;
+        if (millis() - lastTestPacketTime < 20*1000)
+        {
+          Log::console(PSTR("Please wait a few seconds to send another test packet."));
+        }
+        else
+        {
+          size_t newArraySize = sizeof(radio.TLE_TC_1) + 4;
+          uint8_t concatenatedArray[newArraySize];
+          concatenate_unix(radio.TLE_TC_1, newArraySize,concatenatedArray);
+          uint8_t telecomand_encoded[256];
+          int size = encode(concatenatedArray,  newArraySize, telecomand_encoded);
+          
+          size_t newArraySize2 = sizeof(radio.TLE_TC_2) + 4;
+          uint8_t concatenatedArray2[newArraySize2];
+          concatenate_unix(radio.TLE_TC_2, newArraySize2,concatenatedArray2);
+          uint8_t telecomand_encoded2[256];
+          int size2 = encode(concatenatedArray2,  newArraySize2, telecomand_encoded2);
+          
+          size_t newArraySize3 = sizeof(radio.TLE_TC_3) + 4;
+          uint8_t concatenatedArray3[newArraySize3];
+          concatenate_unix(radio.TLE_TC_3, newArraySize3,concatenatedArray3);
+          uint8_t telecomand_encoded3[256];
+          int size3 = encode(concatenatedArray3,  newArraySize3, telecomand_encoded3);
+                    
+          size_t newArraySize4 = sizeof(radio.TLE_TC_4) + 4;
+          uint8_t concatenatedArray4[newArraySize4];
+          concatenate_unix(radio.TLE_TC_4, newArraySize4,concatenatedArray4);
+          uint8_t telecomand_encoded4[256];
+          int size4 = encode(concatenatedArray4,  newArraySize4, telecomand_encoded4);
+                    
+          size_t newArraySize5 = sizeof(radio.TLE_TC_5) + 4;
+          uint8_t concatenatedArray5[newArraySize5];
+          concatenate_unix(radio.TLE_TC_5, newArraySize5,concatenatedArray5);
+          uint8_t telecomand_encoded5[256];
+          int size5 = encode(concatenatedArray5,  newArraySize5, telecomand_encoded5);
+
+
+          radio.sendTx(telecomand_encoded, size);
+          delay(200);
+          //radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
+          radio.sendTx(telecomand_encoded2, size2);
+          delay(200);
+          radio.sendTx(telecomand_encoded3, size3);
+          delay(200);
+          radio.sendTx(telecomand_encoded4, size4);
+          delay(200);
+          radio.sendTx(telecomand_encoded5, size5);
+          lastTestPacketTime = millis();
+          Log::console(PSTR("Sending TLE packets!"));
+          
+          
+        }
+      }
     }
     else if (strcmp(svalue.c_str(), "11") == 0)
     {
@@ -319,25 +355,35 @@ void ConfigManager::handleRefreshConsole()
         }
         else
         {
+          size_t newArraySize = sizeof(radio.ADCS_CALIBRATION_TC_1) + 4;
+          uint8_t concatenatedArray[newArraySize];
+          concatenate_unix(radio.ADCS_CALIBRATION_TC_1, newArraySize,concatenatedArray);
           uint8_t telecomand_encoded[256];
-          int size = encode(radio.TLE_TC_1,  sizeof(radio.TLE_TC_1), telecomand_encoded);
+          int size = encode(concatenatedArray,  newArraySize, telecomand_encoded);
+          
+          size_t newArraySize2 = sizeof(radio.ADCS_CALIBRATION_TC_2) + 4;
+          uint8_t concatenatedArray2[newArraySize2];
+          concatenate_unix(radio.ADCS_CALIBRATION_TC_2, newArraySize2,concatenatedArray2);
           uint8_t telecomand_encoded2[256];
-          int size2 = encode(radio.TLE_TC_2,  sizeof(radio.TLE_TC_2), telecomand_encoded2);
-
+          int size2 = encode(concatenatedArray2,  newArraySize2, telecomand_encoded2);
+          
+          size_t newArraySize3 = sizeof(radio.ADCS_CALIBRATION_TC_3) + 4;
+          uint8_t concatenatedArray3[newArraySize3];
+          concatenate_unix(radio.ADCS_CALIBRATION_TC_3, newArraySize3,concatenatedArray3);
+          uint8_t telecomand_encoded3[256];
+          int size3 = encode(concatenatedArray3,  newArraySize3, telecomand_encoded3);
 
           radio.sendTx(telecomand_encoded, size);
           delay(500);
-          //radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
           radio.sendTx(telecomand_encoded2, size2);
+          delay(500);
+          radio.sendTx(telecomand_encoded3, size3);
           lastTestPacketTime = millis();
-          Log::console(PSTR("Sending TLE_TC packets!"));
+          Log::console(PSTR("Sending ADCS_CALIBRATION packets!"));
+          
           
         }
       }
-    }
-    else if (strcmp(svalue.c_str(), "12") == 0)
-    {
-      txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES",sizeof(radio.SET_GYRO_RES_TC));
     }
     else if (strcmp(svalue.c_str(), "20") == 0)
     {
@@ -355,32 +401,20 @@ void ConfigManager::handleRefreshConsole()
     }
     else if (strcmp(svalue.c_str(), "23") == 0)
     {
-      txTC(radio.ACK_DATA_TC,"ACK DATA",sizeof(radio.ACK_DATA_TC));
-    }
-    else if (strcmp(svalue.c_str(), "24") == 0)
-    {
-      txTC(radio.SET_SF_CR_TC,"SET SF CR",sizeof(radio.SET_SF_CR_TC));
-    }
-    else if (strcmp(svalue.c_str(), "25") == 0)
-    {
-      txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION",sizeof(radio.SEND_CALIBRATION_TC));
-    }
-    else if (strcmp(svalue.c_str(), "26") == 0)
-    {
       txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT",sizeof(radio.CHANGE_TIMEOUT_TC));
     }
     else if (strcmp(svalue.c_str(), "30") == 0)
     {
-      txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO",sizeof(radio.TAKE_PHOTO_TC));
+      txTC(radio.ACTIVATE_PAYLOAD_TC,"ACTIVATE PAYLOAD",sizeof(radio.ACTIVATE_PAYLOAD_TC));
     }
     else if (strcmp(svalue.c_str(), "40") == 0)
     {
-      txTC(radio.TAKE_RF_TC, "TAKE RF",sizeof(radio.TAKE_RF_TC));
-    }
-    else if (strcmp(svalue.c_str(), "50") == 0)
-    {
       send_config = true;
       txTC(radio.SEND_CONFIG_TC, "SEND CONFIG",sizeof(radio.SEND_CONFIG_TC));
+    }
+    else if (strcmp(svalue.c_str(), "41") == 0)
+    {
+      txTC(radio.UPLINK_CONFIG_TC,"UPLINK CONFIG",sizeof(radio.UPLINK_CONFIG_TC));
     }
     else
     {
@@ -434,7 +468,7 @@ void ConfigManager::handleRefreshConsole()
   server.client().stop();
 }
 
-int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
+int ConfigManager::encode(byte* TC,  size_t length, uint8_t* encoded){
 
     unsigned char codeword[256];
     unsigned char telecomand[256];
@@ -442,10 +476,10 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
     srand(time(NULL));   // Initialization, should only be called once.
     memcpy(telecomand, TC, length);
     encode_data(telecomand, length, codeword);
-    int size = length + NPAR;
+    size_t size = length + NPAR;
     Log::console(PSTR("Packet reed solomon encoded (%u bytes):"), size);
-    char rs_str[size*2] = "";
-    char buffer_rs[2] = "";
+    char rs_str[size*3] = "";
+    char buffer_rs[3] = "";
     for (int i = 0; i < size; i++)
     {
       sprintf(buffer_rs , "%02x ", codeword[i]);
@@ -465,8 +499,10 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
     Radio &radio = Radio::getInstance();
     radio.deinterleave(codeword, size);
     Log::console(PSTR("Packet reed solomon encoded and interleaved (%u bytes):"), size);
-    char int_str[size*2] = "";
-    char buffer_int[2] = "";
+    char int_str[size*3] = "";
+    char buffer_int[3] = "";
+    memset(encoded,0,sizeof(encoded));
+    memcpy(encoded, codeword, size);
     for (int i = 0; i < size; i++)
     {
       sprintf(buffer_int , "%02x ", codeword[i]);
@@ -475,8 +511,10 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
         Log::console(PSTR("%s"), int_str); // print before the buffer is going to loop back
     }
 
-    //ENCODE CONVOLUTIONAL
+  
 
+    //ENCODE CONVOLUTIONAL
+    /*
     uint8_t msg[size];
     memcpy(msg, codeword, size);
     //print_word(ML, msg);
@@ -500,8 +538,29 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* conv_encoded){
       if ( i == encoded_len_bytes - 1)
         Log::console(PSTR("%s"), cc_str); // print before the buffer is going to loop back
     }
+    */
 
-    return encoded_len_bytes;
+    return size;
+}
+
+void ConfigManager::concatenate_unix(byte* TC,  size_t length, uint8_t* concatenatedArray)
+{
+  
+    time_t currentUnixTime = time(NULL);
+    uint32_t unixTime32 = (uint32_t)currentUnixTime;
+    uint8_t unixTimeArray[4];
+    unixTimeArray[0] = (unixTime32 >> 24) & 0xFF;
+    unixTimeArray[1] = (unixTime32 >> 16) & 0xFF;
+    unixTimeArray[2] = (unixTime32 >> 8) & 0xFF;
+    unixTimeArray[3] = unixTime32 & 0xFF;
+    // Copy elements from unixTimeArray to concatenatedArray
+    for (size_t i = 0; i < length; ++i) {
+        concatenatedArray[i] = TC[i];
+    }
+    // Copy elements from otherArray to concatenatedArray
+    for (size_t i = 0; i < 4; ++i) {
+        concatenatedArray[length + i] = unixTimeArray[i];
+    }
 }
 
 void ConfigManager::txTC(byte* TC, const char* TC_name,  size_t length)
@@ -514,9 +573,35 @@ void ConfigManager::txTC(byte* TC, const char* TC_name,  size_t length)
 
   else
   {
+    size_t newArraySize = length + 4;
+    uint8_t concatenatedArray[newArraySize];
+    concatenate_unix(TC, length,concatenatedArray);
+
+    /*
+    time_t currentUnixTime = time(NULL);
+    uint32_t unixTime32 = (uint32_t)currentUnixTime;
+    uint8_t unixTimeArray[4];
+    unixTimeArray[0] = (unixTime32 >> 24) & 0xFF;
+    unixTimeArray[1] = (unixTime32 >> 16) & 0xFF;
+    unixTimeArray[2] = (unixTime32 >> 8) & 0xFF;
+    unixTimeArray[3] = unixTime32 & 0xFF;
+    size_t unixTimeSize = sizeof(unixTimeArray);
+    size_t TCSize = length;
+    size_t newArraySize = unixTimeSize + TCSize;
+    uint8_t concatenatedArray[newArraySize];
+    // Copy elements from unixTimeArray to concatenatedArray
+    for (size_t i = 0; i < TCSize; ++i) {
+        concatenatedArray[i] = TC[i];
+    }
+    // Copy elements from otherArray to concatenatedArray
+    for (size_t i = 0; i < unixTimeSize; ++i) {
+        concatenatedArray[TCSize + i] = unixTimeArray[i];
+    }
+    */
+
     Radio &radio = Radio::getInstance();
     uint8_t telecomand_encoded[256];
-    int size = encode(TC,  length, telecomand_encoded);
+    int size = encode(concatenatedArray,  newArraySize, telecomand_encoded);
 
     static long lastPacketTime = 0;
     if (millis() - lastPacketTime < 20*1000)
@@ -529,6 +614,17 @@ void ConfigManager::txTC(byte* TC, const char* TC_name,  size_t length)
       radio.sendTx(telecomand_encoded, size);
       lastPacketTime = millis();
       Log::console(PSTR("Sending %s TC packet!") ,TC_name);
+
+      char rs_str[size*2] = "";
+      char buffer_rs[2] = "";
+      for (int i = 0; i < size; i++)
+      {
+        sprintf(buffer_rs , "%02x ", telecomand_encoded[i]);
+        strcat(rs_str, buffer_rs);
+        if ( i == size - 1)
+          Log::console(PSTR("%s"), rs_str); //print before the buffer is going to loop back
+      }
+
     }
   }
 }
@@ -890,3 +986,4 @@ void ConfigManager::parseModemStartup()
   if (Radio::getInstance().isReady())
     Radio::getInstance().begin();
 }
+

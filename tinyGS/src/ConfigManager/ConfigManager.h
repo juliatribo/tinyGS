@@ -131,7 +131,8 @@ public:
   boolean init();
   void printConfig();
   void txTC(uint8_t* TC, const char* TC_name,  size_t length);
-  int encode(byte* TC,  size_t length, uint8_t* conv_encoded);
+  void concatenate_unix(byte* TC,  size_t length, uint8_t* concatenated);
+  int encode(byte* TC,  size_t length, uint8_t* encoded);
   
   uint16_t getMqttPort() { return (uint16_t)atoi(mqttPort); }
   const char *getMqttServer() { return mqttServer; }

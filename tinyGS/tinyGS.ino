@@ -322,53 +322,106 @@ void handleSerial()
         configManager.txTC(radio.RESET_TC," RESET", sizeof(radio.RESET_TC));
         break;
       case '2':
-        configManager.txTC(radio.NOMINAL_TC,"NOMINAL", sizeof(radio.NOMINAL_TC));
-        break;
-      case '3':
-        configManager.txTC(radio.LOW_TC,"LOW", sizeof(radio.LOW_TC));
-        break;
-      case '4':
-        configManager.txTC(radio.CRITICAL_TC,"CRITICAL", sizeof(radio.CRITICAL_TC));
-        break;
-      case '5':
-        configManager.txTC(radio.EXIT_LOW_POWER_TC,"EXIT LOW POWER", sizeof(radio.EXIT_LOW_POWER_TC));
-        break;
-      case '6':
-        configManager.txTC(radio.EXIT_CONTINGENCY_TC,"EXIT CONTINGENCY", sizeof(radio.EXIT_CONTINGENCY_TC));
-        break;
-      case '7':
-        configManager.txTC(radio.EXIT_SUNSAFE_TC,"EXIT SUNSAFE", sizeof(radio.EXIT_SUNSAFE_TC));
-        break;
-      case '8':
-        configManager.txTC(radio.SET_TIME_TC,"SET TIME", sizeof(radio.SET_TIME_TC));
+        configManager.txTC(radio.EXIT_STATE_TC,"EXIT STATE", sizeof(radio.EXIT_STATE_TC));
         break;
       case '10':
-        configManager.txTC(radio.SET_CONSTANT_KP_TC,"SET CONSTANT KP", sizeof(radio.SET_CONSTANT_KP_TC));
+        if (!configManager.getAllowTx())
+        {
+          Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
+        }
+        else
+        {
+          lastTestPacketTime = 0;
+          if (millis() - lastTestPacketTime < 20*1000)
+          {
+            Log::console(PSTR("Please wait a few seconds to send another test packet."));
+          }
+          else
+          {
+          size_t newArraySize = sizeof(radio.TLE_TC_1) + 4;
+          uint8_t concatenatedArray[newArraySize];
+          configManager.concatenate_unix(radio.TLE_TC_1, newArraySize,concatenatedArray);
+          uint8_t telecomand_encoded[256];
+          int size = configManager.encode(concatenatedArray,  newArraySize, telecomand_encoded);
+          
+          size_t newArraySize2 = sizeof(radio.TLE_TC_2) + 4;
+          uint8_t concatenatedArray2[newArraySize2];
+          configManager.concatenate_unix(radio.TLE_TC_2, newArraySize2,concatenatedArray2);
+          uint8_t telecomand_encoded2[256];
+          int size2 = configManager.encode(concatenatedArray2,  newArraySize2, telecomand_encoded2);
+          
+          size_t newArraySize3 = sizeof(radio.TLE_TC_3) + 4;
+          uint8_t concatenatedArray3[newArraySize3];
+          configManager.concatenate_unix(radio.TLE_TC_3, newArraySize3,concatenatedArray3);
+          uint8_t telecomand_encoded3[256];
+          int size3 = configManager.encode(concatenatedArray3,  newArraySize3, telecomand_encoded3);
+                    
+          size_t newArraySize4 = sizeof(radio.TLE_TC_4) + 4;
+          uint8_t concatenatedArray4[newArraySize4];
+          configManager.concatenate_unix(radio.TLE_TC_4, newArraySize4,concatenatedArray4);
+          uint8_t telecomand_encoded4[256];
+          int size4 = configManager.encode(concatenatedArray4,  newArraySize4, telecomand_encoded4);
+                    
+          size_t newArraySize5 = sizeof(radio.TLE_TC_5) + 4;
+          uint8_t concatenatedArray5[newArraySize5];
+          configManager.concatenate_unix(radio.TLE_TC_5, newArraySize5,concatenatedArray5);
+          uint8_t telecomand_encoded5[256];
+          int size5 = configManager.encode(concatenatedArray5,  newArraySize5, telecomand_encoded5);
+
+
+            radio.sendTx(telecomand_encoded, size);
+            delay(200);
+            //radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
+            radio.sendTx(telecomand_encoded2, size2);
+            delay(200);
+            radio.sendTx(telecomand_encoded3, size3);
+            delay(200);
+            radio.sendTx(telecomand_encoded4, size4);
+            delay(200);
+            radio.sendTx(telecomand_encoded5, size5);
+            lastTestPacketTime = millis();
+            Log::console(PSTR("Sending TLE packets!"));
+          }
+        }
         break;
       case '11':
         if (!configManager.getAllowTx())
         {
           Log::console(PSTR("Radio transmission is not allowed by config! Check your config on the web panel and make sure transmission is allowed by local regulations"));
-          break;
         }
-
-        lastTestPacketTime = 0;
-        if (millis() - lastTestPacketTime < 20*1000)
+        else
         {
-          Log::console(PSTR("Please wait a few seconds to send another test packet."));
-          break;
-        }
-        
-        radio.sendTx(radio.TLE_TC_1, sizeof(radio.TLE_TC_1));
-        delay(500);
-        radio.sendTx(radio.TLE_TC_2, sizeof(radio.TLE_TC_2));
-        lastTestPacketTime = millis();
-        Log::console(PSTR("Sending TLE_TC packets!"));
-        break;
+          lastTestPacketTime = 0;
+          if (millis() - lastTestPacketTime < 20*1000)
+          {
+            Log::console(PSTR("Please wait a few seconds to send another test packet."));
+          }
+          else
+          {
+            uint8_t concatenatedArray[sizeof(radio.ADCS_CALIBRATION_TC_1) ];
+            configManager.concatenate_unix(radio.ADCS_CALIBRATION_TC_1, sizeof(radio.ADCS_CALIBRATION_TC_1) ,concatenatedArray);
+            uint8_t telecomand_encoded[256];
+            int size = configManager.encode(concatenatedArray,  sizeof(radio.ADCS_CALIBRATION_TC_1) , telecomand_encoded);
+            
+            uint8_t concatenatedArray2[sizeof(radio.ADCS_CALIBRATION_TC_2) ];
+            configManager.concatenate_unix(radio.ADCS_CALIBRATION_TC_2, sizeof(radio.ADCS_CALIBRATION_TC_2),concatenatedArray2);
+            uint8_t telecomand_encoded2[256];
+            int size2 = configManager.encode(concatenatedArray2,  sizeof(radio.ADCS_CALIBRATION_TC_2), telecomand_encoded2);
+            
+            uint8_t concatenatedArray3[sizeof(radio.ADCS_CALIBRATION_TC_3) ];
+            configManager.concatenate_unix(radio.ADCS_CALIBRATION_TC_3, sizeof(radio.ADCS_CALIBRATION_TC_3) ,concatenatedArray3);
+            uint8_t telecomand_encoded3[256];
+            int size3 = configManager.encode(concatenatedArray3,  sizeof(radio.ADCS_CALIBRATION_TC_3) , telecomand_encoded3);
 
-        break;
-      case '12':
-        configManager.txTC(radio.SET_GYRO_RES_TC, "SET GYRO RES", sizeof(radio.SET_GYRO_RES_TC));
+            radio.sendTx(telecomand_encoded, size);
+            delay(500);
+            radio.sendTx(telecomand_encoded2, size2);
+            delay(500);
+            radio.sendTx(telecomand_encoded3, size3);
+            lastTestPacketTime = millis();
+            Log::console(PSTR("Sending ADCS_CALIBRATION packets!"));
+          }
+        }
         break;
       case '20':
         configManager.txTC(radio.SEND_DATA_TC,"SEND DATA", sizeof(radio.SEND_DATA_TC));
@@ -380,25 +433,16 @@ void handleSerial()
         configManager.txTC(radio.STOP_SENDING_DATA_TC,"STOP SENDING DATA", sizeof(radio.STOP_SENDING_DATA_TC));
         break;
       case '23':
-        configManager.txTC(radio.ACK_DATA_TC,"ACK DATA", sizeof(radio.ACK_DATA_TC));
-        break;
-      case '24':
-        configManager.txTC(radio.SET_SF_CR_TC,"SET SF CR", sizeof(radio.SET_SF_CR_TC));
-        break;
-      case '25':
-        configManager.txTC(radio.SEND_CALIBRATION_TC,"SEND CALIBRATION", sizeof(radio.SEND_CALIBRATION_TC));
-        break;
-      case '26':
         configManager.txTC(radio.CHANGE_TIMEOUT_TC,"CHANGE TIMEOUT", sizeof(radio.CHANGE_TIMEOUT_TC));
         break;
       case '30':
-        configManager.txTC(radio.TAKE_PHOTO_TC,"TAKE PHOTO", sizeof(radio.TAKE_PHOTO_TC));
+        configManager.txTC(radio.ACTIVATE_PAYLOAD_TC,"ACTIVATE_PAYLOAD", sizeof(radio.ACTIVATE_PAYLOAD_TC));
         break;
       case '40':
-        configManager.txTC(radio.TAKE_RF_TC, "TAKE RF", sizeof(radio.TAKE_RF_TC));
-        break;
-      case '50':
         configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG", sizeof(radio.SEND_CONFIG_TC));
+        break;
+      case '41':
+        configManager.txTC(radio.UPLINK_CONFIG_TC,"UPLINK CONFIG", sizeof(radio.UPLINK_CONFIG_TC));
         break;
       default:
         Log::console(PSTR("Unknown command: %c"), serialCmd);
@@ -447,25 +491,15 @@ void printControls()
   Log::console(PSTR("b - reboot the board"));
   Log::console(PSTR("p - send test packet to nearby stations (to check transmission)"));
   Log::console(PSTR("1 - send RESET TC"));
-  Log::console(PSTR("2 - send NOMINAL TC"));
-  Log::console(PSTR("3 - send LOW TC"));
-  Log::console(PSTR("4 - send CRITICAL TC"));
-  Log::console(PSTR("5 - send EXIT LOW POWER TC"));
-  Log::console(PSTR("6 - send EXIT CONTINGENCY TC"));
-  Log::console(PSTR("7 - send EXIT SUNSAFE TC"));
-  Log::console(PSTR("8 - send SET TIME TC"));
-  Log::console(PSTR("10 - send SET CONSTANT KP TC"));
-  Log::console(PSTR("11 - send TLE TC"));
-  Log::console(PSTR("12 - send SET GYRO RES TC"));
+  Log::console(PSTR("2 - send EXIT STATE TC"));
+  Log::console(PSTR("10 - send TLE TC"));
+  Log::console(PSTR("11 - send ADCS CALIBRATION TC"));
   Log::console(PSTR("20 - send SEND DATA TC"));
   Log::console(PSTR("21 - send SEND TELEMETRY TC"));
   Log::console(PSTR("22 - send STOP SENDING DATA TC"));
-  Log::console(PSTR("23 - send ACK DATA TC"));
-  Log::console(PSTR("24 - send SET SF CR TC"));
-  Log::console(PSTR("25 - send SEND CALIBRATION TC"));
-  Log::console(PSTR("26 - send CHANGE TIMEOUT TC"));
-  Log::console(PSTR("30 - send TAKE PHOTO TC"));
-  Log::console(PSTR("40 - send TAKE RF TC"));
-  Log::console(PSTR("50 - send SEND CONFIG TC"));
+  Log::console(PSTR("23 - send CHANGE TIMEOUT TC"));
+  Log::console(PSTR("30 - send ACTIVATE PAYLOAD TC"));
+  Log::console(PSTR("40 - send SEND CONFIG TC"));
+  Log::console(PSTR("41 - send UPLINK CONFIG TC"));
   Log::console(PSTR("------------------------------------"));
 }

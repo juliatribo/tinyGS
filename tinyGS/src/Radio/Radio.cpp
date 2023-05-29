@@ -360,7 +360,7 @@ uint8_t Radio::listen()
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
 
-  /* 
+    /* 
     //read convolution decoded
     int index = ceil(respLen/RATE_CON);
     Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
@@ -374,55 +374,8 @@ uint8_t Radio::listen()
       if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
         Log::console(PSTR("%s"), rx_str_deconv); // print before the buffer is going to loop back
     }
+    */
 
-    //read convolution decoded and deinterleaved
-    char *rx_str_deconv_deinter = new char[buffSize];
-    uint8_t data_deconv_deinter[index];
-    memcpy(data_deconv_deinter,data_deconv,index);
-    deinterleave(data_deconv_deinter,index);
-    //delete padding of interleaved
-    bool end = false;
-    while(!end){
-      if(data_deconv_deinter[index-1]!=0xFF)
-        index--;
-      else{
-        index --;
-        end = true;
-      }
-    }
-    Log::console(PSTR("Packet convolution decoded and deinterleaved (%u bytes):"), index);
-    for (int i = 0; i < index; i++)
-    {
-      sprintf(rx_str_deconv_deinter + i * 3 % (buffSize - 1), "%02x ", data_deconv_deinter[i]);
-      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
-        Log::console(PSTR("%s"), rx_str_deconv_deinter); // print before the buffer is going to loop back
-    }
-
-    //read convolution decoded, deinterleaved and rs decoded
-    Log::console(PSTR("Packet convolution decoded, deinterleaved and rs decoded (%u bytes):"), index);
-    char *rx_str_deconv_deinter_ders = new char[buffSize];
-    uint8_t data_deconv_deinter_ders[index];
-    memcpy(data_deconv_deinter_ders,data_deconv_deinter,index);
-    decode_rs(data_deconv_deinter_ders,index);
-    for (int i = 0; i < index; i++)
-    {
-      sprintf(rx_str_deconv_deinter_ders + i * 3 % (buffSize - 1), "%02x ", data_deconv_deinter_ders[i]);
-      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
-        Log::console(PSTR("%s"), rx_str_deconv_deinter_ders); // print before the buffer is going to loop back
-    }
-
-    //read data packet  
-    Log::console(PSTR("Packet data (%u bytes):"), index - NPAR);
-    char *rx_data = new char[buffSize];
-    uint8_t packet_data[index - NPAR];
-    memcpy(packet_data,data_deconv_deinter_ders,index - NPAR);
-    for (int i = 0; i < index - NPAR; i++)
-    {
-      sprintf(rx_data + i * 3 % (buffSize - 1), "%02x ", packet_data[i]);
-      if (i * 3 % buffSize == buffSize - 3 || i == index - NPAR - 1)
-        Log::console(PSTR("%s"), rx_data); // print before the buffer is going to loop back
-    }
-  */
 
   
     //send_data ack  
@@ -432,13 +385,18 @@ uint8_t Radio::listen()
         //add the correct received packets to the ack_data vector
         ACK_DATA_TC[0] = 0xC8;
         ACK_DATA_TC[1] = 0x9D;
-        ACK_DATA_TC[2] = 0x17;
+        ACK_DATA_TC[2] = 0x18;
       }
-      int received_index = respFrame[2] + 3;
+      int received_index = respFrame[3];
       ACK_DATA_TC[received_index]=0x01;
-      //ACK_DATA_TC[last_data_packet+3] = respFrame[2];
-      if (((respFrame[2] == 0x13)||( duration > std::chrono::minutes(1)))&& last_data_packet>0){ 
-       
+      //ACK_DATA_TC[last_data_packet+3] = respFrame[3];
+      if (((respFrame[3] == 0x13)||( duration > std::chrono::minutes(1)))&& last_data_packet>0){ 
+        time_t currentUnixTime = time(NULL);
+        uint32_t unixTime32 = (uint32_t)currentUnixTime;
+        ACK_DATA_TC[23] = (unixTime32 >> 24) & 0xFF;
+        ACK_DATA_TC[24] = (unixTime32 >> 16) & 0xFF;
+        ACK_DATA_TC[25] = (unixTime32 >> 8) & 0xFF;
+        ACK_DATA_TC[26] = unixTime32 & 0xFF;
         Log::console(PSTR("Received packets (%u bytes):"), sizeof(ACK_DATA_TC));
         char *ack_rx_data = new char[buffSize];
         uint8_t ack_data[sizeof(ACK_DATA_TC)];
@@ -463,6 +421,62 @@ uint8_t Radio::listen()
       }
       last_data_packet ++;
     }
+
+    else{
+
+    //read convolution decoded and deinterleaved
+    uint8_t data_deinter[respLen];
+    memcpy(data_deinter,respFrame,respLen);
+    char *rx_str_deinter = new char[buffSize];
+    deinterleave(data_deinter,respLen);
+    //delete padding of interleaved
+    int index = respLen;
+    bool end = false;
+    while(!end){
+      if(data_deinter[index-1]!=0xFF)
+        index--;
+      else{
+        index --;
+        end = true;
+      }
+    }
+    Log::console(PSTR("Packet deinterleaved (%u bytes):"), index);
+    for (int i = 0; i < index; i++)
+    {
+      sprintf(rx_str_deinter + i * 3 % (buffSize - 1), "%02x ", data_deinter[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
+        Log::console(PSTR("%s"), rx_str_deinter); // print before the buffer is going to loop back
+    }
+    
+    //read convolution decoded, deinterleaved and rs decoded
+    Log::console(PSTR("Packet deinterleaved and rs decoded (%u bytes):"), index);
+    char *rx_str_deinter_ders = new char[buffSize];
+    uint8_t data_deinter_ders[index];
+    memcpy(data_deinter_ders,data_deinter,index);
+    decode_rs(data_deinter_ders,index);
+    for (int i = 0; i < index; i++)
+    {
+      sprintf(rx_str_deinter_ders + i * 3 % (buffSize - 1), "%02x ", data_deinter_ders[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
+        Log::console(PSTR("%s"), rx_str_deinter_ders); // print before the buffer is going to loop back
+    }
+    
+    //read data packet  
+    Log::console(PSTR("Packet data (%u bytes):"), index - NPAR);
+    char *rx_data = new char[buffSize];
+    uint8_t packet_data[index - NPAR];
+    memcpy(packet_data,data_deinter_ders,index - NPAR);
+    for (int i = 0; i < index - NPAR; i++)
+    {
+      sprintf(rx_data + i * 3 % (buffSize - 1), "%02x ", packet_data[i]);
+      if (i * 3 % buffSize == buffSize - 3 || i == index - NPAR - 1)
+        Log::console(PSTR("%s"), rx_data); // print before the buffer is going to loop back
+    }
+    
+    memcpy(respFrame,packet_data,index - NPAR);
+    respLen = index - NPAR;
+    }
+
     if(send_config){
       send_config = false;
     }
@@ -1213,15 +1227,16 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
   
   
   correct_reed_solomon *rs = correct_reed_solomon_create(correct_rs_primitive_polynomial_ccsds, 1, 1, MIN_DISTANCE_RS);
-  uint8_t rs_decoded[MESSAGE_LENGTH_RS];
+  uint8_t rs_decoded[MESSAGE_LENGTH_RS];  
   ssize_t size_decode = correct_reed_solomon_decode(rs, data, length, rs_decoded); 
-  memcpy(data, rs_decoded,size_decode);
+
   
   initialize_ecc();
   srand(time(NULL));
   unsigned char *data_ch[length];
   memcpy(data_ch,data,length);
   decode_data(data, length);
+  
   int erasures[16];
   int nerasures = 0;
   int syndrome = check_syndrome();
@@ -1237,5 +1252,5 @@ void  Radio::decode_rs(uint8_t* data, size_t length)
     Log::console(PSTR("Errors detected, proceeding to correct errors"));
     result =correct_errors_erasures (data,length,nerasures,erasures);
   }
-
+  
 }
