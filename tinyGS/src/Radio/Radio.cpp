@@ -387,7 +387,7 @@ uint8_t Radio::listen()
         ACK_DATA_TC[1] = 0x9D;
         ACK_DATA_TC[2] = 0x18;
       }
-      int received_index = respFrame[3];
+      int received_index = respFrame[3]+3;
       ACK_DATA_TC[received_index]=0x01;
       //ACK_DATA_TC[last_data_packet+3] = respFrame[3];
       if (((respFrame[3] == 0x13)||( duration > std::chrono::minutes(1)))&& last_data_packet>0){ 
@@ -585,6 +585,15 @@ uint8_t Radio::listen()
 
     if(send_config){
 
+      NACK_CONFIG_TC[0] = 0xC8;
+      NACK_CONFIG_TC[1] = 0x9D;
+      NACK_CONFIG_TC[2] = 0x1A;
+      time_t currentUnixTime = time(NULL);
+      uint32_t unixTime32 = (uint32_t)currentUnixTime;
+      NACK_CONFIG_TC[3] = (unixTime32 >> 24) & 0xFF;
+      NACK_CONFIG_TC[4] = (unixTime32 >> 16) & 0xFF;
+      NACK_CONFIG_TC[5] = (unixTime32 >> 8) & 0xFF;
+      NACK_CONFIG_TC[6] = unixTime32 & 0xFF;
       Log::console(PSTR("Config not received, send NACK packet (%u bytes):"), sizeof(NACK_CONFIG_TC));
       char *nack_rx_data = new char[buffSize];
       uint8_t nack_data[sizeof(NACK_CONFIG_TC)];
@@ -607,6 +616,16 @@ uint8_t Radio::listen()
 
     }
     if(send_telemetry){
+
+      NACK_TELEMETRY_TC[0] = 0xC8;
+      NACK_TELEMETRY_TC[1] = 0x9D;
+      NACK_TELEMETRY_TC[2] = 0x19;
+      time_t currentUnixTime = time(NULL);
+      uint32_t unixTime32 = (uint32_t)currentUnixTime;
+      NACK_TELEMETRY_TC[3] = (unixTime32 >> 24) & 0xFF;
+      NACK_TELEMETRY_TC[4] = (unixTime32 >> 16) & 0xFF;
+      NACK_TELEMETRY_TC[5] = (unixTime32 >> 8) & 0xFF;
+      NACK_TELEMETRY_TC[6] = unixTime32 & 0xFF;
 
       Log::console(PSTR("Telemetry not received, send NACK packet (%u bytes):"), sizeof(NACK_TELEMETRY_TC));
       char *nack_rx_data = new char[buffSize];
