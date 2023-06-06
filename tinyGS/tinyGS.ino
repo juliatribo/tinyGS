@@ -78,6 +78,7 @@
 #include "src/OTA/OTA.h"
 #include <ESPNtpClient.h>
 #include "src/Logger/Logger.h"
+#include "src/Arduinotest/Motor.h" //Code for motor
 
 #if  RADIOLIB_VERSION_MAJOR != (0x04) || RADIOLIB_VERSION_MINOR != (0x02) || RADIOLIB_VERSION_PATCH != (0x01) || RADIOLIB_VERSION_EXTRA != (0x00)
 #error "You are not using the correct version of RadioLib please copy TinyGS/lib/RadioLib on Arduino/libraries"
@@ -92,6 +93,7 @@
 ConfigManager& configManager = ConfigManager::getInstance();
 MQTT_Client& mqtt = MQTT_Client::getInstance();
 Radio& radio = Radio::getInstance();
+Motor& motor = Motor::getInstance();
 
 const char* ntpServer = "time.cloudflare.com";
 void printLocalTime();
@@ -147,6 +149,7 @@ void setup()
   Serial.begin(115200);
   delay(100);
 
+
   Log::console(PSTR("TinyGS Version %d - %s"), status.version, status.git_version);
   configManager.setWifiConnectionCallback(wifiConnected);
   configManager.setConfiguredCallback(configured);
@@ -174,8 +177,12 @@ void setup()
   printControls();
 }
 
-void loop() {  
+void loop() {
+  //delay(100);
+  //SerComm(0,90);
+
   configManager.doLoop();
+
   if (configManager.isFailSafeActive())
   {
     static bool updateAttepted = false;
@@ -398,7 +405,16 @@ void handleSerial()
         configManager.txTC(radio.TAKE_RF_TC, "TAKE RF", sizeof(radio.TAKE_RF_TC));
         break;
       case '50':
-        configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG", sizeof(radio.SEND_CONFIG_TC));
+        //configManager.txTC(radio.SEND_CONFIG_TC, "SEND CONFIG", sizeof(radio.SEND_CONFIG_TC));
+        motor.SerComm(90,90);
+        Log::console(PSTR("Moved motor to position (90,90)"));
+        break;
+      case '66':
+        motor.SerComm(0,0);
+        Log::console(PSTR("Moved motor to position (90,90)"));
+        break;
+      case '69':
+        
         break;
       default:
         Log::console(PSTR("Unknown command: %c"), serialCmd);
@@ -467,5 +483,7 @@ void printControls()
   Log::console(PSTR("30 - send TAKE PHOTO TC"));
   Log::console(PSTR("40 - send TAKE RF TC"));
   Log::console(PSTR("50 - send SEND CONFIG TC"));
+  Log::console(PSTR("66 - update motor position"));
+  Log::console(PSTR("70 - update motor position"));
   Log::console(PSTR("------------------------------------"));
 }
