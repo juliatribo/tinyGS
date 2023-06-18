@@ -24,13 +24,17 @@
 #include "../Logger/Logger.h"
 #include "../Radio/Radio.h"
 #include "../Display/graphics.h"
-#include "../radio/correct/rs/ecc.h"
-#include "../radio/correct/reed-solomon.h"
-#include "../radio/correct/convolutional.h"
+#include "../Radio/correct/rs/ecc.h"
+#include "../Radio/correct/reed-solomon.h"
+#include "../Radio/correct/convolutional.h"
 #include "ArduinoJson.h"
 #if ARDUINOJSON_USE_LONG_LONG == 0 && !PLATFORMIO
 #error "Using Arduino IDE is not recommended, please follow this guide https://github.com/G4lile0/tinyGS/wiki/Arduino-IDE or edit /ArduinoJson/src/ArduinoJson/Configuration.hpp and amend to #define ARDUINOJSON_USE_LONG_LONG 1 around line 68"
 #endif
+
+#include <Wire.h>
+#include <../ESP32_Servo/ESP32_Servo.h>
+#include <src/ArduinoTest/Motor.h>
 
 ConfigManager::ConfigManager()
     : IotWebConf2(thingName, &dnsServer, &server, initialApPassword, configVersion), server(80), gsConfigHtmlFormatProvider(*this), boards({
@@ -415,6 +419,66 @@ void ConfigManager::handleRefreshConsole()
     else if (strcmp(svalue.c_str(), "41") == 0)
     {
       txTC(radio.UPLINK_CONFIG_TC,"UPLINK CONFIG",sizeof(radio.UPLINK_CONFIG_TC));
+    }
+    else if (strcmp(svalue.c_str(), "66") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = 0;
+      double elevation = 0;
+      motor.SerComm(azimuth,elevation);
+      Log::console(PSTR("Moving motor to (%f,%f)"),azimuth, elevation);
+    }
+    else if (strcmp(svalue.c_str(), "67") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = 0;
+      double elevation = 90;
+      motor.SerComm(azimuth,elevation);
+      Log::console(PSTR("Moving motor to (%f,%f)"),azimuth, elevation);
+    }
+    else if (strcmp(svalue.c_str(), "68") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = 90;
+      double elevation = 0;
+      motor.SerComm(azimuth,elevation);
+      Log::console(PSTR("Moving motor to (%f,%f)"),azimuth, elevation);
+    }
+    else if (strcmp(svalue.c_str(), "69") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = 90;
+      double elevation = 90;
+      motor.SerComm(azimuth,elevation);
+      Log::console(PSTR("Moving motor to (%f,%f)"),azimuth, elevation);
+    }
+    else if (strcmp(svalue.c_str(), "a+") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = motor.ComAzimuth+10;
+      motor.SerComm(azimuth,motor.ComElevation);
+      Log::console(PSTR("Moving motor to azimuth: %f"),azimuth);
+    }
+    else if (strcmp(svalue.c_str(), "a-") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double azimuth = motor.ComAzimuth-10;
+      motor.SerComm(azimuth,motor.ComElevation);
+      Log::console(PSTR("Moving motor to azimuth: %f"),azimuth);
+    }
+    else if (strcmp(svalue.c_str(), "e+") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double elevation = motor.ComElevation+10;
+      motor.SerComm(motor.ComAzimuth,elevation);
+      Log::console(PSTR("Moving motor to elevation: %f"), elevation);
+    }
+    else if (strcmp(svalue.c_str(), "e-") == 0)
+    {
+      Motor &motor = Motor::getInstance();
+      double elevation = motor.ComElevation-10;
+      motor.SerComm(motor.ComAzimuth,elevation);
+      Log::console(PSTR("Moving motor to elevation: %f"), elevation);
     }
     else
     {
