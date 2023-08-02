@@ -497,7 +497,7 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* encoded){
 
     //INTERLEAVE
     Radio &radio = Radio::getInstance();
-    radio.deinterleave(codeword, size);
+    radio.deinterleave(codeword, size);//to interleave the same process used for deinterleaving can be used
     Log::console(PSTR("Packet reed solomon encoded and interleaved (%u bytes):"), size);
     char int_str[size*3] = "";
     char buffer_int[3] = "";
@@ -510,35 +510,6 @@ int ConfigManager::encode(byte* TC,  size_t length, uint8_t* encoded){
       if ( i == size - 1)
         Log::console(PSTR("%s"), int_str); // print before the buffer is going to loop back
     }
-
-  
-
-    //ENCODE CONVOLUTIONAL
-    /*
-    uint8_t msg[size];
-    memcpy(msg, codeword, size);
-    //print_word(ML, msg);
-
-    correct_convolutional *conv;
-
-    //create convolutional config
-    conv = correct_convolutional_create(RATE_CON, ORDER_CON, correct_conv_r12_7_polynomial);
-
-    //encode message
-    size_t encoded_len_bits = correct_convolutional_encode(conv,msg,size,conv_encoded);
-    int encoded_len_bytes = ceil(encoded_len_bits/8);
-    
-    Log::console(PSTR("Packet turbo encoded sent(%u bytes):"), encoded_len_bytes);
-    char cc_str[size*2] = "";
-    char buffer_cc[2] = "";
-    for (int i = 0; i < encoded_len_bytes; i++)
-    {
-      sprintf(buffer_cc , "%02x ", conv_encoded[i]);
-      strcat(cc_str, buffer_cc);
-      if ( i == encoded_len_bytes - 1)
-        Log::console(PSTR("%s"), cc_str); // print before the buffer is going to loop back
-    }
-    */
 
     return size;
 }

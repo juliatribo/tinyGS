@@ -360,23 +360,6 @@ uint8_t Radio::listen()
         Log::console(PSTR("%s"), rx_str); // print before the buffer is going to loop back
     }
 
-    /* 
-    //read convolution decoded
-    int index = ceil(respLen/RATE_CON);
-    Log::console(PSTR("Packet convolution decoded (%u bytes):"), index);
-    char *rx_str_deconv = new char[buffSize];
-    uint8_t data_deconv[respLen];
-    memcpy(data_deconv,respFrame,respLen);
-    decode_conv(data_deconv,respLen);
-    for (int i = 0; i < index; i++)
-    {
-      sprintf(rx_str_deconv + i * 3 % (buffSize - 1), "%02x ", data_deconv[i]);
-      if (i * 3 % buffSize == buffSize - 3 || i == index - 1)
-        Log::console(PSTR("%s"), rx_str_deconv); // print before the buffer is going to loop back
-    }
-    */
-
-
   
     //send_data ack  
     
